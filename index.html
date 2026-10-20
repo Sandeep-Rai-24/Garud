@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GARUD AI | Air Operations Decision Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root {
+  --navy: #061b2e; --navy2: #0a2b46; --blue: #1769b0; --ink: #102b46; 
+  --muted: #718398; --line: #dce5ed; --bg: #edf2f7; --green: #16854c; 
+  --amber: #c78319; --red: #d93838;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--ink); font-size: 13px; }
+button, select, input { font: inherit; outline: none; }
+button { cursor: pointer; }
+a { text-decoration: none; }
+
+/* Topbar & Header */
+.topbar { height: 42px; background: #061b2e; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid #29465e; gap: 14px; }
+.gov-brand, .top-actions, .profile, .brand-lockup, .brand-centre, .panel-title, .heading-actions { display: flex; align-items: center; }
+.gov-brand { gap: 11px; min-width: 0; }
+.flag { width: 32px; height: 21px; border-radius: 2px; overflow: hidden; display: flex; flex-direction: column; flex-shrink: 0; }
+.flag i { flex: 1; } .flag i:nth-child(1) { background: #ff9933; } .flag i:nth-child(2) { background: #fff; } .flag i:nth-child(3) { background: #138808; }
+.gov-brand strong, .gov-brand span { display: block; }
+.gov-brand strong { font-size: 11px; } .gov-brand span { font-size: 9px; color: #c1d0de; margin-top: 2px; }
+.top-actions { gap: 16px; }
+.demo-pill { border: 1px solid #34546d; border-radius: 18px; padding: 5px 9px; font-size: 8px; letter-spacing: .8px; white-space: nowrap; color: #e4edf5; }
+.demo-pill b { display: inline-block; width: 6px; height: 6px; background: #32c783; border-radius: 50%; margin-right: 5px; }
+.top-date { font-size: 10px; color: #d0dbe5; white-space: nowrap; }
+.icon-button { position: relative; border: 0; background: transparent; color: #fff; font-size: 18px; }
+.icon-button em { position: absolute; right: -7px; top: -6px; background: #df3c45; border-radius: 10px; padding: 2px 5px; font-size: 8px; font-style: normal; }
+.profile { gap: 8px; border-left: 1px solid #29465e; padding-left: 14px; }
+.avatar { height: 28px; width: 28px; border-radius: 50%; display: grid; place-items: center; background: #244965; font-size: 9px; font-weight: 800; }
+.profile strong, .profile small { display: block; white-space: nowrap; }
+.profile strong { font-size: 9px; } .profile small { font-size: 8px; color: #b8c9d8; margin-top: 3px; }
+.profile > span { font-size: 12px; color: #b8c9d8; }
+.brand-header { min-height: 83px; background: linear-gradient(105deg, #071d31 0%, #092740 58%, #071d31 100%); color: white; display: grid; grid-template-columns: minmax(245px, 1fr) minmax(390px, 1.35fr) minmax(245px, 1fr); align-items: center; padding: 10px 20px; border-bottom: 1px solid #23445d; gap: 16px; position: relative; overflow: hidden; }
+.brand-header:after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(120deg, transparent 0 18%, #ffffff05 18.2% 18.6%, transparent 18.8% 78%, #ffffff04 78.2% 78.6%, transparent 78.8%); }
+.gov-crest { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+.crest-symbol { width: 35px; height: 47px; border: 1px solid #8398a8; border-radius: 3px; display: grid; place-items: center; color: #e7edf2; font-family: Georgia, serif; font-weight: bold; font-size: 26px; flex-shrink: 0; }
+.gov-crest-text strong { font-size: 13px; line-height: 1.35; }
+.brand-centre { justify-content: center; position: relative; z-index: 1; min-width: 0; }
+/* GARUD logo image (replace src with your image link) */
+.brand-logo-img { height: 95px; width: auto; max-width: 100%; object-fit: contain; display: block; filter: drop-shadow(0 2px 8px rgba(0,0,0,.35)); }
+.motto { border-left: 1px solid #496176; padding-left: 22px; text-align: center; position: relative; z-index: 1; }
+.motto strong { display: block; font-size: 20px; line-height: 1.25; color: #fff; font-weight: 800; }
+.motto .saffron { color: #ffb35e; }
+.motto span { display: block; font-size: 8px; color: #d4dfe8; letter-spacing: 1.6px; font-weight: 700; margin-top: 6px; white-space: nowrap; }
+
+/* App Shell & Sidebar */
+.app-shell { display: flex; min-height: calc(100vh - 125px); }
+.sidebar { width: 214px; flex-shrink: 0; background: linear-gradient(180deg, #082844, #061b2e); color: #c7d5e3; padding: 15px 9px 12px; display: flex; flex-direction: column; }
+.sidebar-label { font-size: 9px; letter-spacing: 1.3px; color: #7f9bb3; padding: 3px 12px 12px; font-weight: 700; }
+.nav-item { width: 100%; border: 0; background: transparent; color: #c8d7e5; display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px; border-radius: 7px; margin-bottom: 4px; font-size: 11px; transition: .18s; text-decoration: none; font-weight: 700; }
+.nav-item:hover { background: #123c5e; color: #fff; }
+.nav-item.active { background: linear-gradient(90deg, #176fc2, #15518c); color: #fff; box-shadow: inset 3px 0 #65bdff; }
+.nav-icon { width: 20px; text-align: center; font-size: 16px; color: #a5bdd0; flex-shrink: 0; }
+.nav-item.active .nav-icon { color: #fff; }
+.sidebar-bottom { margin-top: auto; }
+.side-status { display: flex; align-items: center; gap: 9px; border-top: 1px solid #28445a; padding: 15px 8px; }
+.pulse { width: 8px; height: 8px; background: #32c783; border-radius: 50%; box-shadow: 0 0 0 4px #164631; flex-shrink: 0; }
+.side-status b { font-size: 9px; color: #e2edf6; display: block; }
+.side-status small { font-size: 8px; color: #91a9bf; margin-top: 4px; display: block; }
+.side-motto { font-size: 8px; letter-spacing: 1px; color: #7f9bb4; padding: 4px 8px; }
+
+/* Main Content */
+.main-content { flex: 1; min-width: 0; padding: 16px; overflow: hidden; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 12px; }
+.eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; color: #71869b; margin-bottom: 5px; }
+.page-heading h2 { font-size: 20px; letter-spacing: -.4px; color: #102d4c; }
+.heading-actions { gap: 12px; }
+.updated { font-size: 10px; color: #61778b; white-space: nowrap; }
+.green-dot { display: inline-block; width: 7px; height: 7px; background: #1aa35e; border-radius: 50%; margin-right: 5px; }
+.btn-outline { background: #fff; border: 1px solid #cdd9e5; color: #254864; padding: 8px 11px; border-radius: 6px; font-size: 10px; transition: 0.2s; }
+.btn-outline:hover { background: #f3f8fc; border-color: #1769b0; color: #1769b0; }
+
+/* KPI Grid */
+.kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.kpi-card { min-height: 83px; background: #fff; border: 1px solid #dfe7ef; border-radius: 9px; padding: 12px; display: flex; align-items: center; gap: 10px; position: relative; box-shadow: 0 2px 5px #132f4a05; min-width: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(13,43,69,0.08); }
+.kpi-icon { width: 39px; height: 39px; border-radius: 50%; display: grid; place-items: center; font-size: 21px; font-weight: 700; flex-shrink: 0; }
+.blue .kpi-icon { background: #e0efff; color: #155c9e; }
+.green .kpi-icon { background: #dff5e9; color: #15814a; }
+.violet .kpi-icon { background: #e8e9ff; color: #5656b4; }
+.amber .kpi-icon { background: #fff0d9; color: #b66b13; }
+.red .kpi-icon { background: #ffe4e4; color: #d72d37; }
+.kpi-content { min-width: 0; }
+.kpi-content > span { display: block; font-size: 10px; font-weight: 700; color: #51687e; white-space: nowrap; }
+.kpi-content strong { display: block; font-size: 25px; line-height: 1.2; color: #102e4d; margin: 3px 0; }
+.kpi-content small { font-size: 8px; color: #728398; white-space: nowrap; }
+.kpi-content small b { color: #405d77; margin-right: 3px; }
+.trend { font-size: 9px; font-weight: 700; color: #168b50; position: absolute; right: 9px; top: 13px; }
+.progress { height: 5px; background: #e5edf4; border-radius: 10px; overflow: hidden; margin-top: 7px; width: 100px; max-width: 100%; }
+.progress i { display: block; height: 100%; background: #1d9b60; border-radius: 10px; }
+.red-text { color: #d63d42 !important; }
+
+/* Dashboard Grid */
+.dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(300px, .9fr); gap: 12px; margin-bottom: 12px; align-items: stretch; }
+.panel { background: #fff; border: 1px solid #dce5ee; border-radius: 9px; overflow: hidden; box-shadow: 0 2px 5px #132f4a05; min-width: 0; }
+.panel-header { min-height: 39px; background: #fff; border-bottom: 1px solid #e2e9f0; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; gap: 10px; }
+.panel-title { gap: 9px; min-width: 0; }
+.title-icon { display: inline-grid; place-items: center; width: 23px; height: 23px; border-radius: 6px; background: #e9f2fb; color: #155c96; font-size: 14px; flex-shrink: 0; }
+.panel-title h3 { font-size: 12px; font-weight: 800; color: #163654; white-space: nowrap; }
+.live-badge { font-size: 8px; color: #16844d; background: #e7f7ee; border-radius: 20px; padding: 5px 7px; margin-left: 3px; white-space: nowrap; }
+.live-badge i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #1da15d; margin-right: 4px; }
+.map-filters { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.map-filters select { max-width: 115px; border: 1px solid #d9e3ed; border-radius: 5px; padding: 6px 7px; color: #294b67; background: #f9fbfd; font-size: 9px; }
+.map-tool { width: 27px; height: 27px; border: 1px solid #dce5ee; border-radius: 5px; background: #fff; color: #315a78; font-size: 17px; }
+.map-wrap { height: 440px; position: relative; background: #d8e4ec; }
+.map-wrap #map { height: 100%; width: 100%; z-index: 1; }
+.map-note { position: absolute; z-index: 500; right: 10px; top: 10px; background: #fffF; border: 1px solid #dce5ee; border-radius: 5px; padding: 6px 8px; font-size: 8px; color: #50677c; box-shadow: 0 2px 8px #0b2b4510; }
+.map-legend { position: absolute; z-index: 500; left: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 9px; background: #fffF; border: 1px solid #d7e1ea; border-radius: 7px; padding: 8px 10px; box-shadow: 0 2px 8px #0b2b4510; }
+.map-legend div { display: flex; align-items: center; gap: 5px; font-size: 9px; color: #314f69; white-space: nowrap; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.fighter { background: #d64a50; } .transport { background: #2777c5; } .surveillance { background: #d99b23; } .training { background: #19945d; }
+.legend-line { width: 15px; height: 0; border-top: 2px dashed #3278ad; }
+
+/* Live Radar button */
+.radar-btn { display: inline-flex; align-items: center; gap: 6px; height: 27px; padding: 0 10px; border: 1px solid #dce5ee; border-radius: 5px; background: #fff; color: #315a78; font-size: 9px; font-weight: 800; white-space: nowrap; letter-spacing: .3px; transition: .18s; }
+.radar-btn:hover { border-color: #1769b0; color: #1769b0; }
+.radar-btn.active { background: #0e4a74; border-color: #0e4a74; color: #fff; box-shadow: 0 0 0 3px #1769b01f; }
+.radar-btn .radar-dot { width: 7px; height: 7px; border-radius: 50%; background: #1b9a5c; box-shadow: 0 0 0 3px #1b9a5c22; }
+.radar-btn.active .radar-dot { background: #32c783; animation: blipPulse 1.6s infinite; }
+
+/* Radar scope overlay */
+.radar-scope { position: absolute; z-index: 600; right: 10px; bottom: 26px; width: 224px; background: linear-gradient(180deg, #04182a, #062236); border: 1px solid #1e5a7e; border-radius: 10px; padding: 8px; box-shadow: 0 10px 28px rgba(3,20,34,.45); opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s; }
+.radar-scope.show { opacity: 1; transform: none; pointer-events: auto; }
+.radar-head { display: flex; align-items: center; justify-content: space-between; color: #bfe9d6; font-size: 8px; letter-spacing: .8px; font-weight: 800; padding: 0 2px 6px; }
+.radar-head button { border: 0; background: transparent; color: #8fb4c9; font-size: 14px; line-height: 1; }
+.radar-display { position: relative; width: 200px; height: 200px; margin: 0 auto; border-radius: 50%; overflow: hidden; background: radial-gradient(circle, #0a3a2a 0%, #06251c 70%, #041a14 100%); border: 1px solid #1f6c4f; box-shadow: inset 0 0 26px #0b4c3522; }
+.radar-ring { position: absolute; border: 1px solid #2c8a63; border-radius: 50%; opacity: .45; }
+.radar-ring.r1 { inset: 16.6%; } .radar-ring.r2 { inset: 33.3%; } .radar-ring.r3 { inset: 2%; opacity: .22; }
+.radar-cross { position: absolute; background: #2c8a63; opacity: .3; }
+.radar-cross.h { left: 0; right: 0; top: 50%; height: 1px; }
+.radar-cross.v { top: 0; bottom: 0; left: 50%; width: 1px; }
+.radar-sweep { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgba(50,199,131,0) 0deg, rgba(50,199,131,0) 288deg, rgba(50,199,131,.42) 360deg); animation: radarSweep 4s linear infinite; }
+@keyframes radarSweep { to { transform: rotate(360deg); } }
+.radar-center-dot { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: #7ff0bb; box-shadow: 0 0 10px #7ff0bb; }
+.radar-blip { position: absolute; width: 6px; height: 6px; border-radius: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 8px currentColor; background: currentColor; animation: blipPulse 2.2s infinite; }
+.radar-blip.fighter { color: #ff5b61; } .radar-blip.transport { color: #4aa3ff; } .radar-blip.surveillance { color: #ffc24a; } .radar-blip.training { color: #35d68c; }
+@keyframes blipPulse { 0%,100% { opacity: .55; transform: translate(-50%,-50%) scale(.85); } 50% { opacity: 1; transform: translate(-50%,-50%) scale(1.25); } }
+.radar-foot { display: flex; justify-content: space-between; color: #8fb4c9; font-size: 8px; padding: 7px 2px 1px; letter-spacing: .4px; }
+.afs-marker { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #0f4c37; border: 1.5px solid #32c783; color: #7ff0bb; font-size: 11px; box-shadow: 0 0 0 4px rgba(50,199,131,.16), 0 0 14px rgba(50,199,131,.5); }
+
+/* Small pills / helper classes */
+.status-tag { font-size: 8px; font-weight: 800; letter-spacing: .5px; padding: 4px 8px; border-radius: 20px; white-space: nowrap; }
+.green-tag { background: #e5f7ed; color: #16834b; }
+.amber-tag { background: #fff3df; color: #a86c13; }
+.blue-tag { background: #e6f2ff; color: #1766a7; }
+.muted-link { font-size: 9px; color: #8a9aaa; }
+
+/* Right Stack */
+.right-stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.aircraft-panel { display: flex; flex-direction: column; }
+.aircraft-image-banner { width: 100%; height: 150px; background: #e2e8f0; background-size: cover; background-position: center; position: relative; overflow: hidden; border-bottom: 1px solid #dce5ee; }
+.aircraft-image-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.72), transparent 62%); }
+.aircraft-image-banner .aircraft-title { position: absolute; bottom: 10px; left: 12px; z-index: 2; color: white; font-size: 16px; font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.air-status { position: absolute; top: 10px; right: 10px; z-index: 2; background: #1b9a5c; color: #fff; font-size: 8px; font-weight: 800; letter-spacing: .6px; padding: 4px 10px; border-radius: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.air-status.amber { background: #d99a25; }
+.air-status.blue { background: #2777c5; }
+.ac-details-container { padding: 12px; }
+.ac-subtitle { font-size: 10px; color: #718398; margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.detail-item { background: #f7f9fc; border: 1px solid #e4eaf1; padding: 8px 10px; border-radius: 6px; min-width: 0; transition: background 0.2s; }
+.detail-item:hover { background: #f1f7fc; }
+.detail-item span { display: block; font-size: 8px; color: #718398; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; font-weight: 600; }
+.detail-item strong { display: block; font-size: 12px; color: #16395c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-footer-details { border-top: 1px solid #edf1f5; padding-top: 10px; }
+.ac-footer-row { display: flex; justify-content: space-between; gap: 10px; font-size: 10px; margin-bottom: 6px; }
+.ac-footer-row span { color: #718398; }
+.ac-footer-row strong { color: #213f5a; text-align: right; }
+
+/* Timeline */
+.timeline { padding: 13px 15px 8px; }
+.timeline-step { position: relative; display: flex; gap: 10px; min-height: 42px; }
+.timeline-step:not(:last-child):before { content: ""; position: absolute; left: 5px; top: 11px; bottom: -1px; width: 2px; background: #d9e3ec; }
+.timeline-step i { position: relative; z-index: 1; width: 12px; height: 12px; border-radius: 50%; border: 3px solid #c4d1de; background: #fff; flex-shrink: 0; margin-top: 1px; }
+.timeline-step.done i { border-color: #2188c7; background: #2188c7; }
+.timeline-step.current i { border-color: #1b9a5c; background: #fff; box-shadow: 0 0 0 3px #e2f5e9; }
+.timeline-step b { font-size: 10px; color: #2b4963; display: block; }
+.timeline-step small { font-size: 9px; color: #8291a0; margin-top: 4px; display: block; }
+
+/* Bottom Grid */
+.bottom-grid { display: grid; grid-template-columns: 1.25fr 1fr 1.05fr 1.15fr; gap: 10px; margin-bottom: 12px; }
+.text-button { border: 0; background: transparent; color: #1a70b5; font-size: 9px; white-space: nowrap; font-weight: 600; }
+.text-button:hover { text-decoration: underline; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; white-space: nowrap; }
+th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #edf1f5; font-size: 9px; }
+th { background: #f8fafc; color: #7b8da0; font-weight: 700; font-size: 8px; text-transform: uppercase; letter-spacing: 0.3px; }
+td { color: #36536d; }
+tbody tr { transition: background 0.15s; }
+tbody tr:hover { background: #f4f9ff; }
+.table-status { font-size: 8px; font-weight: 700; padding: 4px 6px; border-radius: 4px; }
+.blue-status { color: #1766a7; background: #e6f2ff; }
+.green-status { color: #16834b; background: #e5f7ed; }
+.amber-status { color: #a86c13; background: #fff3df; }
+.status-dot-inline { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; }
+.green-bg { background: #1b9a5c; } .amber-bg { background: #d99a25; }
+
+/* Weather */
+.weather-hero { padding: 12px; background: linear-gradient(125deg, #f4f9fd, #eaf3fa); border-bottom: 1px solid #e2eaf1; }
+.weather-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.weather-place { font-size: 10px; font-weight: 800; color: #234762; }
+.weather-time { font-size: 8px; color: #8494a4; }
+.weather-current { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.weather-art { width: 60px; height: 52px; display: grid; place-items: center; position: relative; flex-shrink: 0; }
+.sun-disc { position: absolute; width: 27px; height: 27px; border-radius: 50%; background: #f5bd45; top: 5px; left: 7px; box-shadow: 0 0 0 5px #f5bd4525; }
+.cloud-shape { position: absolute; right: 2px; bottom: 5px; width: 43px; height: 21px; border-radius: 20px; background: #a8bdce; box-shadow: inset 0 -3px #8fa8bb; }
+.cloud-shape:before { content: ""; position: absolute; width: 22px; height: 22px; border-radius: 50%; background: #c5d4e0; left: 7px; top: -11px; }
+.cloud-shape:after { content: ""; position: absolute; width: 17px; height: 17px; border-radius: 50%; background: #b6c9d8; right: 5px; top: -7px; }
+.weather-temp strong { font-size: 27px; letter-spacing: -1px; color: #123451; display: block; line-height: 1; }
+.weather-temp span { font-size: 9px; color: #5e7589; display: block; margin-top: 5px; }
+.weather-meta { font-size: 8px; color: #71869a; margin-top: 4px; }
+.weather-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px 11px; }
+.weather-metric { background: #f8fafc; border: 1px solid #e8eef4; border-radius: 6px; padding: 7px 6px; min-width: 0; }
+.weather-metric span { display: block; color: #8191a1; font-size: 8px; margin-bottom: 4px; }
+.weather-metric strong { display: block; color: #2a4a64; font-size: 10px; white-space: nowrap; }
+.weather-forecast { padding: 0 11px 10px; }
+.forecast-title { display: flex; justify-content: space-between; align-items: center; font-size: 9px; font-weight: 800; color: #38566e; padding: 3px 0 7px; }
+.forecast-title span { font-size: 8px; color: #8a9aaa; font-weight: 500; }
+.forecast-row { display: grid; grid-template-columns: 35px 20px 1fr auto; gap: 7px; align-items: center; border-top: 1px solid #edf1f5; padding: 7px 0; font-size: 8px; }
+.forecast-row .period { color: #6d8295; }
+.forecast-icon { font-size: 14px; text-align: center; }
+.forecast-row .condition { color: #5c7387; }
+.forecast-row strong { color: #2b4a63; font-size: 9px; }
+.weather-status { display: flex; align-items: center; gap: 6px; margin: 0 11px 11px; padding: 7px 8px; border-radius: 5px; background: #fff5e5; color: #9b6718; font-size: 8px; line-height: 1.4; }
+.weather-status i { width: 6px; height: 6px; background: #d79a27; border-radius: 50%; flex-shrink: 0; }
+
+/* Alerts */
+.alert-list { padding: 2px 12px; }
+.alert-row { display: flex; align-items: center; gap: 9px; padding: 10px 0; border-bottom: 1px solid #edf1f5; }
+.alert-row:last-child { border-bottom: 0; }
+.alert-symbol { width: 23px; height: 23px; border-radius: 6px; display: grid; place-items: center; font-weight: 800; flex-shrink: 0; font-size: 12px; }
+.red-alert { background: #ffeded; color: #d83e45; }
+.amber-alert { background: #fff3dd; color: #bb7916; }
+.blue-alert { background: #e7f2ff; color: #2477b8; }
+.alert-row b { font-size: 9px; color: #36516a; font-weight: 700; display: block; }
+.alert-row small { font-size: 8px; color: #8b99a7; margin-top: 4px; display: block; }
+
+/* Decision Support */
+.optimisation-panel { margin-bottom: 10px; }
+.recommendation-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+.recommendation { display: flex; align-items: flex-start; gap: 9px; padding: 11px; border: 1px solid #e2eaf1; border-radius: 7px; background: #fbfdff; min-width: 0; transition: 0.2s; }
+.recommendation:hover { background: #f4f9fd; border-color: #c3d9ea; }
+.rec-number { width: 25px; height: 25px; display: grid; place-items: center; background: #e7f1fb; color: #1b69a8; border-radius: 50%; font-size: 9px; font-weight: 800; flex-shrink: 0; }
+.recommendation b { font-size: 10px; color: #25445f; }
+.recommendation p { font-size: 9px; color: #77899a; line-height: 1.5; margin-top: 5px; }
+.rec-label { font-size: 8px; font-weight: 800; margin-left: auto; white-space: nowrap; }
+.amber-text { color: #b77918; } .blue-text { color: #176bb0; } .green-text { color: #15844c !important; }
+
+/* Footer & Toast */
+.footer { display: flex; justify-content: space-between; gap: 10px; padding: 6px 2px; color: #8b9aaa; font-size: 8px; }
+.toast { position: fixed; bottom: 20px; right: 92px; background: #0b2d4e; color: white; padding: 11px 15px; border-radius: 7px; box-shadow: 0 8px 30px #102b4930; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s; z-index: 2000; font-size: 11px; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* Map & Leaflet Overrides */
+.leaflet-container { font-family: 'Inter', Arial, sans-serif; }
+.aircraft-marker { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 16px; font-weight: 800; border: 2px solid #fff; box-shadow: 0 2px 8px #112f4a40; transition: transform 0.2s; }
+.aircraft-marker:hover { transform: scale(1.15); }
+.aircraft-marker.fighter { background: #d64a50; }
+.aircraft-marker.transport { background: #2777c5; }
+.aircraft-marker.surveillance { background: #d99b23; }
+.aircraft-marker.training { background: #19945d; }
+.leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+.popup-title { font-weight: 800; color: #153654; margin-bottom: 4px; font-size: 12px; }
+.popup-line { font-size: 11px; color: #5c7286; margin-top: 3px; }
+
+/* Modals */
+.modal-overlay { position: fixed; inset: 0; background: rgba(6,27,46,0.6); backdrop-filter: blur(2px); z-index: 3000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.2s; }
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal-content { background: #fff; border-radius: 12px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transform: translateY(20px); transition: 0.2s; }
+.modal-overlay.show .modal-content { transform: translateY(0); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #dce5ee; padding-bottom: 10px; }
+.modal-header h3 { font-size: 16px; color: #102d4c; }
+.modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #718398; }
+.modal-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.modal-table th, .modal-table td { padding: 10px; text-align: left; border-bottom: 1px solid #edf1f5; font-size: 11px; }
+.modal-table th { background: #f8fafc; color: #718398; font-weight: 700; font-size: 10px; text-transform: uppercase; }
+
+/* ============ VayuDev Chatbot ============ */
+.chat-launcher { position: fixed; right: 20px; bottom: 20px; z-index: 2500; width: 58px; height: 58px; border-radius: 50%; border: 1px solid #2a5f8c; background: linear-gradient(135deg, #1769b0, #0b3150); color: #fff; display: grid; place-items: center; font-size: 24px; box-shadow: 0 12px 28px rgba(9,40,66,.42); transition: transform .2s, box-shadow .2s; }
+.chat-launcher:hover { transform: translateY(-3px); box-shadow: 0 16px 34px rgba(9,40,66,.5); }
+.chat-launcher .launcher-pulse { position: absolute; inset: -6px; border-radius: 50%; border: 1px solid #32c78366; animation: launcherPulse 2.4s infinite; pointer-events: none; }
+@keyframes launcherPulse { 0% { transform: scale(.85); opacity: .85; } 100% { transform: scale(1.3); opacity: 0; } }
+
+.chat-panel { position: fixed; right: 20px; bottom: 88px; z-index: 2600; width: 340px; max-width: calc(100vw - 32px); height: 490px; max-height: calc(100vh - 130px); background: #fff; border-radius: 14px; border: 1px solid #d8e3ee; box-shadow: 0 24px 60px rgba(8,32,54,.3); display: flex; flex-direction: column; overflow: hidden; opacity: 0; transform: translateY(14px); pointer-events: none; transition: .22s; }
+.chat-panel.show { opacity: 1; transform: none; pointer-events: auto; }
+.chat-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: linear-gradient(120deg, #071d31, #0d3a5c); color: #fff; flex-shrink: 0; }
+.chat-avatar { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, #ff9933, #138808); font-size: 11px; font-weight: 800; letter-spacing: .5px; flex-shrink: 0; }
+.chat-head-text strong { font-size: 13px; display: block; letter-spacing: .3px; }
+.chat-head-text small { font-size: 9px; color: #a9c4d8; display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.chat-head-text small i { width: 6px; height: 6px; border-radius: 50%; background: #32c783; display: inline-block; }
+.chat-close { margin-left: auto; border: 0; background: transparent; color: #a9c4d8; font-size: 20px; line-height: 1; }
+.chat-close:hover { color: #fff; }
+.chat-body { flex: 1; overflow-y: auto; padding: 14px; background: #f5f8fb; display: flex; flex-direction: column; gap: 10px; }
+.chat-msg { max-width: 88%; padding: 9px 11px; border-radius: 10px; font-size: 11px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.chat-msg.bot { background: #fff; border: 1px solid #e2eaf2; color: #2b4a63; border-bottom-left-radius: 3px; align-self: flex-start; }
+.chat-msg.user { background: linear-gradient(135deg, #1769b0, #15518c); color: #fff; border-bottom-right-radius: 3px; align-self: flex-end; }
+.chat-msg.typing { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+.chat-msg.typing span { width: 5px; height: 5px; border-radius: 50%; background: #8fa9bd; animation: typingDot 1s infinite; }
+.chat-msg.typing span:nth-child(2) { animation-delay: .15s; }
+.chat-msg.typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes typingDot { 0%,100% { opacity: .3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+.chat-chips { display: flex; gap: 6px; overflow-x: auto; padding: 9px 12px; border-top: 1px solid #e8eef4; background: #fff; flex-shrink: 0; scrollbar-width: thin; }
+.chat-chip { flex-shrink: 0; border: 1px solid #cfe0ee; background: #f4f9fe; color: #1a5f9b; border-radius: 20px; padding: 5px 9px; font-size: 9px; font-weight: 600; white-space: nowrap; transition: .15s; }
+.chat-chip:hover { background: #e5f1fb; border-color: #9cc4e4; }
+.chat-input-row { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid #e8eef4; background: #fff; flex-shrink: 0; }
+.chat-input-row input { flex: 1; border: 1px solid #d5e1ec; border-radius: 8px; padding: 8px 10px; font-size: 11px; color: #234; background: #f9fbfd; min-width: 0; }
+.chat-input-row input:focus { border-color: #1769b0; background: #fff; }
+.chat-input-row button { width: 38px; border: 0; border-radius: 8px; background: linear-gradient(135deg, #1769b0, #15518c); color: #fff; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="gov-brand"><div class="flag" aria-label="Indian tricolour"><i></i><i></i><i></i></div><div><strong>Government of India</strong><span>Ministry of Defence · Prototype</span></div></div>
+  <div class="top-actions"><span class="demo-pill"><b></b> SIMULATED DATA</span><span class="top-date" id="currentDate">18 Oct 2026</span><button class="icon-button" title="Notifications" id="topBell">♧<em>3</em></button><div class="profile"><div class="avatar">OC</div><div><strong>Operations Command</strong><small>Demo Administrator</small></div><span>⌄</span></div></div>
+</div>
+
+<header class="brand-header">
+  <div class="gov-crest"><div class="crest-symbol"></div><div class="gov-crest-text"><strong></strong></div></div>
+  <div class="brand-centre">
+    <!-- 👇 YAHAN APNI GARUD LOGO IMAGE KI LINK PASTE KAREN -->
+    <img class="brand-logo-img" id="garudLogo" src="HEADER.png" alt="GARUD — Generalised AI for Resource Utilisation & Decision Support">
+  </div>
+  <div class="motto"><strong>सुरक्षित आकाश</strong><strong class="saffron">शक्तिशाली भारत</strong><span>STRONGER SKIES · SAFER TOMORROW</span></div>
+</header>
+
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-label">WORKSPACE</div>
+  <a href="index.html" class="nav-item active"><span class="nav-icon">▦</span>Dashboard</a>
+  <a href="Live Air Operations.html" class="nav-item"><span class="nav-icon">✈</span>Live Air Operations</a>
+  <a href="missionplan.html" class="nav-item"><span class="nav-icon">▤</span>Mission Planning</a>
+  <a href="resource.html" class="nav-item"><span class="nav-icon">▣</span>Resource Management</a>
+  <a href="airspace-routes.html" class="nav-item"><span class="nav-icon">⌖</span>Airspace &amp; Routes</a>
+
+  <a href="weatherwatch-live.html" class="nav-item"><span class="nav-icon">☁</span>Weather &amp; Threats</a>
+  <a href="aioptimize.html" class="nav-item"><span class="nav-icon">✳</span>AI Optimisation</a>
+  <a href="reports-analytics.html" class="nav-item"><span class="nav-icon">▥</span>Reports &amp; Analytics</a>
+  <a href="alerts-notifications.html" class="nav-item"><span class="nav-icon">♧</span>Alerts &amp; Notifications</a>
+  <div class="sidebar-bottom">
+    <div class="side-status">
+      <span class="pulse"></span>
+      <div><b>Demo system online</b><small>Local prototype mode</small></div>
+    </div>
+    <div class="side-motto">INTEGRATE · OPTIMISE · DECIDE</div>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="page-heading"><div><p class="eyebrow">OPERATIONS OVERVIEW</p><h2 id="pageTitle">Air Operations Dashboard</h2></div><div class="heading-actions"><span class="updated"><span class="green-dot"></span> Demo feed active</span><button class="btn-outline" id="refreshBtn">↻ Refresh data</button></div></div>
+
+  <section class="kpi-grid">
+    <article class="kpi-card blue" data-kpi="aircraft">
+      <div class="kpi-icon">✈</div>
+      <div class="kpi-content"><span>Total Aircraft</span><strong id="aircraftCount">124</strong><small><b>78</b> Fighter <b>24</b> Transport <b>22</b> Other</small></div>
+      <span class="trend">↑ 3</span>
+    </article>
+    <article class="kpi-card green" data-kpi="crew">
+      <div class="kpi-icon">♟</div>
+      <div class="kpi-content"><span>Available Crew</span><strong id="crewCount">312</strong><small><b>268</b> Available <b>44</b> Standby</small></div>
+      <span class="trend">↑ 12</span>
+    </article>
+    <article class="kpi-card violet" data-kpi="missions">
+      <div class="kpi-icon">◎</div>
+      <div class="kpi-content"><span>Ongoing Missions</span><strong id="missionCount">8</strong><small><b class="red-text">3</b> Patrol <b>2</b> Transport <b>3</b> Other</small></div>
+    </article>
+    <article class="kpi-card amber" data-kpi="fuel">
+      <div class="kpi-icon">▰</div>
+      <div class="kpi-content"><span>Fuel Readiness</span><strong>92%</strong><div class="progress"><i style="width:92%"></i></div></div>
+      <span class="trend">↑ 2%</span>
+    </article>
+    <article class="kpi-card red" data-kpi="alerts">
+      <div class="kpi-icon">!</div>
+      <div class="kpi-content"><span>Active Alerts</span><strong id="alertCount">3</strong><small>Requires review</small></div>
+      <span class="trend" style="color:#d93838">›</span>
+    </article>
+  </section>
+
+  <section class="dashboard-grid">
+    <article class="panel map-panel">
+      <div class="panel-header">
+        <div class="panel-title"><span class="title-icon">✈</span><h3>Live Air Operations</h3><span class="live-badge"><i></i> SIMULATION</span></div>
+        <div class="map-filters">
+          <button class="radar-btn" id="radarBtn" type="button" title="Toggle live radar tracking"><span class="radar-dot"></span>Live Radar</button>
+          <select id="typeFilter" aria-label="Filter aircraft"><option value="all">All types</option><option value="Fighter">Fighter</option><option value="Transport">Transport</option><option value="Surveillance">Surveillance</option><option value="Training">Training</option></select><button class="map-tool" id="mapReset" title="Reset map view">⌖</button>
+        </div>
+      </div>
+      <div class="map-wrap">
+        <div id="map"></div>
+        <div class="map-note"><span class="green-dot"></span> Illustrative locations · Not live military tracking</div>
+        <div class="map-legend">
+          <div><i class="legend-dot fighter"></i>Fighter</div>
+          <div><i class="legend-dot transport"></i>Transport</div>
+          <div><i class="legend-dot surveillance"></i>Surveillance</div>
+          <div><i class="legend-dot training"></i>Training</div>
+          <div><i class="legend-line"></i>Illustrative route</div>
+        </div>
+
+        <!-- Radar scope overlay (toggled by Live Radar button) -->
+        <div class="radar-scope" id="radarScope">
+          <div class="radar-head"><span>LIVE RADAR · DELHI AFS</span><button type="button" id="radarClose" aria-label="Close radar">×</button></div>
+          <div class="radar-display">
+            <div class="radar-ring r3"></div>
+            <div class="radar-ring r1"></div>
+            <div class="radar-ring r2"></div>
+            <div class="radar-cross h"></div>
+            <div class="radar-cross v"></div>
+            <div class="radar-sweep"></div>
+            <div class="radar-center-dot"></div>
+            <div id="radarBlips" style="position:absolute;inset:0;"></div>
+          </div>
+          <div class="radar-foot"><span>◉ 12 AFS STATIONS</span><span>RANGE 2300 KM</span></div>
+        </div>
+      </div>
+    </article>
+
+    <div class="right-stack">
+      <article class="panel aircraft-panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="title-icon">✈</span><h3>Selected Aircraft</h3></div>
+          <span class="status-tag blue-tag">DEMO</span>
+        </div>
+        <div class="aircraft-image-banner" id="acImage" style="background-image: url('https://images.unsplash.com/photo-1559163658-2758e0e82c55?auto=format&fit=crop&w=400&q=80');">
+          <span class="air-status" id="selectedStatus">READY</span>
+          <div class="aircraft-title" id="selectedName">Sukhoi Su-30MKI</div>
+        </div>
+        <div class="ac-details-container">
+          <div class="ac-subtitle">
+            <span id="selectedType">Fighter · Sample asset</span>
+            <span id="selectedId" style="font-weight:700;color:#1769b0;">ID: GARUD-01</span>
+          </div>
+          <div class="detail-grid" id="acDetailGrid">
+            <!-- Populated by JS -->
+          </div>
+          <div class="ac-footer-details">
+            <div class="ac-footer-row"><span>Assigned Task</span><strong id="selectedMission">Air Superiority Patrol</strong></div>
+            <div class="ac-footer-row"><span>Illustrative Region</span><strong id="selectedRegion">Northern Sector</strong></div>
+            <div class="ac-footer-row"><span>ETA (Return)</span><strong id="selectedEta">16:45 IST</strong></div>
+            <div class="ac-footer-row"><span>Resource State</span><strong id="selectedState" class="green-text">Ready</strong></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel timeline-panel">
+        <div class="panel-header"><div class="panel-title"><span class="title-icon">◷</span><h3>Mission Timeline</h3></div><span class="muted-link">Sample</span></div>
+        <div class="timeline">
+          <div class="timeline-step done"><i></i><div><b>Task created</b><small>09:15 · Demo schedule</small></div></div>
+          <div class="timeline-step done"><i></i><div><b>Resource checked</b><small>09:30 · Constraints verified</small></div></div>
+          <div class="timeline-step current"><i></i><div><b>Awaiting review</b><small>Human approval required</small></div></div>
+          <div class="timeline-step"><i></i><div><b>Task completed</b><small>Pending confirmation</small></div></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="bottom-grid">
+    <article class="panel missions-panel">
+      <div class="panel-header"><div class="panel-title"><span class="title-icon">▤</span><h3>Ongoing Tasks</h3></div><button class="text-button" id="viewTasks">View all →</button></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Task</th><th>Category</th><th>Resource</th><th>Status</th></tr></thead>
+          <tbody id="missionTable">
+            <tr><td>01</td><td>Readiness assessment</td><td>Planning</td><td>Asset A-01</td><td><span class="table-status blue-status">In review</span></td></tr>
+            <tr><td>02</td><td>Logistics simulation</td><td>Transport</td><td>Asset B-02</td><td><span class="table-status green-status">Ready</span></td></tr>
+            <tr><td>03</td><td>Weather scenario</td><td>Analysis</td><td>Asset C-03</td><td><span class="table-status amber-status">Queued</span></td></tr>
+            <tr><td>04</td><td>Resource balancing</td><td>Optimisation</td><td>Multiple</td><td><span class="table-status green-status">Running</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel airbase-panel">
+      <div class="panel-header"><div class="panel-title"><span class="title-icon">⌂</span><h3>Resource Readiness</h3></div><span class="muted-link">Sample data</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Resource group</th><th>Availability</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Group Alpha</td><td><div class="progress" style="width:50px;display:inline-block;vertical-align:middle;margin-right:5px;"><i style="width:92%"></i></div> 92%</td><td><span class="status-dot-inline green-bg"></span>Ready</td></tr>
+            <tr><td>Group Bravo</td><td><div class="progress" style="width:50px;display:inline-block;vertical-align:middle;margin-right:5px;"><i style="width:84%"></i></div> 84%</td><td><span class="status-dot-inline green-bg"></span>Ready</td></tr>
+            <tr><td>Group Charlie</td><td><div class="progress" style="width:50px;display:inline-block;vertical-align:middle;margin-right:5px;"><i style="width:68%;background:#d99a25"></i></div> 68%</td><td><span class="status-dot-inline amber-bg"></span>Review</td></tr>
+            <tr><td>Group Delta</td><td><div class="progress" style="width:50px;display:inline-block;vertical-align:middle;margin-right:5px;"><i style="width:76%"></i></div> 76%</td><td><span class="status-dot-inline green-bg"></span>Ready</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel weather-panel">
+      <div class="panel-header"><div class="panel-title"><span class="title-icon">☁</span><h3>Weather &amp; Airspace</h3></div><span class="muted-link">Demo scenario</span></div>
+      <div class="weather-hero">
+        <div class="weather-hero-top"><span class="weather-place">INDIA · GENERAL SCENARIO</span><span class="weather-time" id="weatherUpdated">Updated just now</span></div>
+        <div class="weather-current">
+          <div class="weather-art"><i class="sun-disc"></i><i class="cloud-shape"></i></div>
+          <div class="weather-temp"><strong>28°</strong><span>Partly cloudy</span><div class="weather-meta">Illustrative conditions · Not live</div></div>
+        </div>
+      </div>
+      <div class="weather-metrics">
+        <div class="weather-metric"><span>Visibility</span><strong>Good</strong></div>
+        <div class="weather-metric"><span>Wind</span><strong>12 km/h</strong></div>
+        <div class="weather-metric"><span>Humidity</span><strong>58%</strong></div>
+      </div>
+      <div class="weather-forecast">
+        <div class="forecast-title">Scenario outlook <span>Sample periods</span></div>
+        <div class="forecast-row"><span class="period">Now</span><span class="forecast-icon">☀</span><span class="condition">Partly cloudy</span><strong>28°</strong></div>
+        <div class="forecast-row"><span class="period">+3 hr</span><span class="forecast-icon">☁</span><span class="condition">Cloud cover</span><strong>26°</strong></div>
+        <div class="forecast-row"><span class="period">+6 hr</span><span class="forecast-icon">☂</span><span class="condition">Light rain</span><strong>24°</strong></div>
+      </div>
+      <div class="weather-status"><i></i><span>Airspace scenario: review required before plan approval.</span></div>
+    </article>
+
+    <article class="panel alerts-panel">
+      <div class="panel-header"><div class="panel-title"><span class="title-icon">♧</span><h3>Alerts &amp; Notifications</h3></div><button class="text-button" id="clearAlerts">Clear alerts</button></div>
+      <div class="alert-list" id="alertList">
+        <div class="alert-row"><span class="alert-symbol red-alert">!</span><div><b>Resource availability changed</b><small>Sample event · 5 min ago</small></div></div>
+        <div class="alert-row"><span class="alert-symbol amber-alert">!</span><div><b>Weather scenario updated</b><small>Sample event · 18 min ago</small></div></div>
+        <div class="alert-row"><span class="alert-symbol blue-alert">i</span><div><b>Plan requires human review</b><small>Sample event · 26 min ago</small></div></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel optimisation-panel">
+    <div class="panel-header"><div class="panel-title"><span class="title-icon">✳</span><h3>GARUD Decision Support</h3></div><span class="status-tag blue-tag">EXPLAINABLE DEMO</span></div>
+    <div class="recommendation-grid">
+      <div class="recommendation"><span class="rec-number">01</span><div><b>Review resource balance</b><p>Compare available capacity with the sample task queue before approving a plan.</p></div><span class="rec-label amber-text">Review</span></div>
+      <div class="recommendation"><span class="rec-number">02</span><div><b>Validate updated inputs</b><p>Check data freshness and resolve missing or conflicting demo records.</p></div><span class="rec-label blue-text">Validate</span></div>
+      <div class="recommendation"><span class="rec-number">03</span><div><b>Human approval required</b><p>Recommendations remain illustrative until reviewed by an authorised user.</p></div><span class="rec-label green-text">Pending</span></div>
+    </div>
+  </section>
+
+  <footer class="footer"><span>GARUD AI · Prototype dashboard</span><span>All metrics, markers and tasks are simulated for demonstration.</span></footer>
+</main>
+</div>
+
+<!-- Modals & Toast -->
+<div class="modal-overlay" id="kpiModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle">Details</h3>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<!-- ============ VayuDev Chatbot ============ -->
+<button class="chat-launcher" id="chatLauncher" aria-label="Open VayuDev assistant" title="Ask VayuDev">
+  <span class="launcher-pulse"></span>
+  <span style="position:relative;z-index:1;">✈</span>
+</button>
+
+<section class="chat-panel" id="chatPanel" aria-label="VayuDev chatbot">
+  <div class="chat-head">
+    <div class="chat-avatar">VD</div>
+    <div class="chat-head-text">
+      <strong>VayuDev</strong>
+      <small><i></i> AI Decision Assistant · Demo</small>
+    </div>
+    <button class="chat-close" id="chatClose" aria-label="Close chat">×</button>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-chips" id="chatChips"></div>
+  <form class="chat-input-row" id="chatForm" autocomplete="off">
+    <input id="chatInput" type="text" placeholder="Ask VayuDev about fleet, fuel, alerts…" maxlength="120">
+    <button type="submit" aria-label="Send message">➤</button>
+  </form>
+</section>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Expanded Aircraft Data with Indian Locations & A-Z Details
+const demoAircraft = [
+  {
+    id: "A-01", name: "Sukhoi Su-30MKI", type: "Fighter", task: "Air Superiority Patrol", 
+    region: "Northern Sector", state: "Ready", lat: 34.15, lng: 77.58, color: "fighter",
+    image: "https://images.unsplash.com/photo-1559163658-2758e0e82c55?auto=format&fit=crop&w=400&q=80",
+    callsign: "GARUD-01", speed: "2,120 km/h", altitude: "35,000 ft", fuel: "85%", crew: "2 (Pilot, WSO)", payload: "8,000 kg", eta: "16:45 IST"
+  },
+  {
+    id: "B-02", name: "C-17 Globemaster III", type: "Transport", task: "Logistics Supply", 
+    region: "Central Sector", state: "In transit", lat: 26.85, lng: 80.95, color: "transport",
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcLcPUO9wN-9tEh7YJhCQtMKCl18DD0n2dNadYBPeOYg&s=10",
+    callsign: "GARUD-02", speed: "830 km/h", altitude: "28,000 ft", fuel: "62%", crew: "4 (Pilots, Loadmasters)", payload: "20 Tons", eta: "14:20 IST"
+  },
+  {
+    id: "C-03", name: "Embraer Netra AEW&C", type: "Surveillance", task: "Monitoring Scenario", 
+    region: "Eastern Sector", state: "Review", lat: 26.15, lng: 91.74, color: "surveillance",
+    image: "https://images.unsplash.com/photo-1521727857535-28d2047c3b2d?auto=format&fit=crop&w=400&q=80",
+    callsign: "GARUD-03", speed: "780 km/h", altitude: "30,000 ft", fuel: "75%", crew: "6 (Operators)", payload: "Radar Suite", eta: "18:10 IST"
+  },
+  {
+    id: "D-04", name: "Hawk Mk 132", type: "Training", task: "Training Scenario", 
+    region: "Western Sector", state: "Ready", lat: 19.07, lng: 72.87, color: "training",
+    image: "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=400&q=80",
+    callsign: "GARUD-04", speed: "1,028 km/h", altitude: "25,000 ft", fuel: "90%", crew: "2 (Instructor, Trainee)", payload: "Light Load", eta: "15:30 IST"
+  },
+  {
+    id: "E-05", name: "C-130J Super Hercules", type: "Transport", task: "Resource Planning", 
+    region: "Southern Sector", state: "Ready", lat: 13.08, lng: 80.27, color: "transport",
+    image: "https://images.unsplash.com/photo-1583507435097-3257a59a7b41?auto=format&fit=crop&w=400&q=80",
+    callsign: "GARUD-05", speed: "670 km/h", altitude: "22,000 ft", fuel: "80%", crew: "3 (Pilots, Loadmaster)", payload: "18 Tons", eta: "17:05 IST"
+  },
+  {
+    id: "F-06", name: "Dassault Rafale", type: "Fighter", task: "Scenario Review", 
+    region: "North-central Sector", state: "Awaiting review", lat: 28.61, lng: 77.20, color: "fighter",
+    image: "https://images.unsplash.com/photo-1559163658-2758e0e82c55?auto=format&fit=crop&w=400&q=80",
+    callsign: "GARUD-06", speed: "1,912 km/h", altitude: "33,000 ft", fuel: "55%", crew: "1 (Pilot)", payload: "9,500 kg", eta: "16:00 IST"
+  },
+  {
+    id: "G-07", name: "HAL Tejas", type: "Fighter", task: "Sector Defense", 
+    region: "Western Sector", state: "Ready", lat: 26.91, lng: 75.80, color: "fighter",
+    image: "https://upload.wikimedia.org/wikipedia/commons/7/74/Tejas_MK1_in_service_for_7_years.jpg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original",
+    callsign: "GARUD-07", speed: "2,205 km/h", altitude: "31,000 ft", fuel: "70%", crew: "1 (Pilot)", payload: "4,000 kg", eta: "15:50 IST"
+  },
+  {
+    id: "H-08", name: "CH-47 Chinook", type: "Transport", task: "Heavy Lift", 
+    region: "Northern Sector", state: "Ready", lat: 34.08, lng: 74.79, color: "transport",
+    image: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=400&q=80",
+    callsign: "GARUD-08", speed: "315 km/h", altitude: "15,000 ft", fuel: "65%", crew: "3 (Pilots, Crew Chief)", payload: "10 Tons", eta: "13:40 IST"
+  },
+  {
+    id: "I-09", name: "P-8I Neptune", type: "Surveillance", task: "Maritime Patrol", 
+    region: "Southern Sector", state: "Ready", lat: 8.52, lng: 76.93, color: "surveillance",
+    image: "https://images.unsplash.com/photo-1521727857535-28d2047c3b2d?auto=format&fit=crop&w=400&q=80",
+    callsign: "GARUD-09", speed: "907 km/h", altitude: "27,000 ft", fuel: "88%", crew: "9 (Mission Crew)", payload: "Sonobuoys, Torpedoes", eta: "19:25 IST"
+  },
+  {
+    id: "J-10", name: "MiG-29 UPG", type: "Fighter", task: "Quick Reaction Alert", 
+    region: "Eastern Sector", state: "Ready", lat: 26.10, lng: 91.58, color: "fighter",
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSGN3JKy8av3or18ookRmPzYulBUoXQYobwVDadKqQuzg&s=10",
+    callsign: "GARUD-10", speed: "2,400 km/h", altitude: "36,000 ft", fuel: "78%", crew: "1 (Pilot)", payload: "3,000 kg", eta: "16:15 IST"
+  }
+];
+
+let map = null, markers = [], routeLines = [];
+
+/* ---------------- AFS stations (radar) ---------------- */
+const afsStations = [
+  { name: "Delhi AFS", lat: 28.56, lng: 77.10 },
+  { name: "Ambala AFS", lat: 30.37, lng: 76.82 },
+  { name: "Jodhpur AFS", lat: 26.25, lng: 73.05 },
+  { name: "Pune AFS", lat: 18.58, lng: 73.92 },
+  { name: "Tezpur AFS", lat: 26.71, lng: 92.78 },
+  { name: "Srinagar AFS", lat: 33.99, lng: 74.77 },
+  { name: "Guwahati AFS", lat: 26.10, lng: 91.58 },
+  { name: "Bengaluru AFS", lat: 12.95, lng: 77.67 },
+  { name: "Mumbai AFS", lat: 19.09, lng: 72.87 },
+  { name: "Hyderabad AFS", lat: 17.38, lng: 78.48 },
+  { name: "Trivandrum AFS", lat: 8.52, lng: 76.93 },
+  { name: "Leh AFS", lat: 34.13, lng: 77.54 }
+];
+let radarLayer = null, radarActive = false;
+
+function showToast(message) {
+  const t = document.getElementById("toast");
+  t.textContent = message;
+  t.classList.add("show");
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+function iconFor(a) {
+  return L.divIcon({
+    className: "",
+    html: `<div class="aircraft-marker ${a.color}" title="${a.name}">✈</div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
+}
+
+function selectAircraft(a) {
+  document.getElementById("selectedName").textContent = a.name;
+  document.getElementById("selectedType").textContent = `${a.type} · Sample asset`;
+  document.getElementById("selectedId").textContent = `ID: ${a.callsign}`;
+  document.getElementById("acImage").style.backgroundImage = `url('${a.image}')`;
+
+  const tag = document.getElementById("selectedStatus");
+  tag.textContent = a.state.toUpperCase();
+  if (["Review", "Awaiting review"].includes(a.state)) tag.className = "air-status amber";
+  else if (a.state === "In transit") tag.className = "air-status blue";
+  else tag.className = "air-status";
+
+  const grid = document.getElementById("acDetailGrid");
+  grid.innerHTML = `
+    <div class="detail-item"><span>Call Sign</span><strong>${a.callsign}</strong></div>
+    <div class="detail-item"><span>Speed</span><strong>${a.speed}</strong></div>
+    <div class="detail-item"><span>Altitude</span><strong>${a.altitude}</strong></div>
+    <div class="detail-item"><span>Fuel Status</span><strong>${a.fuel}</strong></div>
+    <div class="detail-item"><span>Crew Count</span><strong>${a.crew}</strong></div>
+    <div class="detail-item"><span>Payload</span><strong>${a.payload}</strong></div>
+  `;
+
+  document.getElementById("selectedMission").textContent = a.task;
+  document.getElementById("selectedRegion").textContent = a.region;
+  document.getElementById("selectedEta").textContent = a.eta || "—";
+  document.getElementById("selectedState").textContent = a.state;
+
+  showToast(`${a.name} selected · Telemetry updated`);
+}
+
+function drawAircraft(filter = "all") {
+  if (!map) return;
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  const filtered = demoAircraft.filter(a => filter === "all" || a.type === filter);
+
+  filtered.forEach(a => {
+    const m = L.marker([a.lat, a.lng], { icon: iconFor(a) }).addTo(map);
+    m.bindPopup(`
+      <div class="popup-title">${a.name}</div>
+      <div class="popup-line">Type: ${a.type}</div>
+      <div class="popup-line">Task: ${a.task}</div>
+      <div class="popup-line">Status: <strong style="color:${a.state==='Ready'?'#16854c':'#c78319'}">${a.state}</strong></div>
+      <div class="popup-line" style="margin-top:5px;color:#718398;font-size:9px;"><em>Click for full details</em></div>
+    `);
+    m.on("click", () => selectAircraft(a));
+    markers.push(m);
+  });
+}
+
+function drawRoutes() {
+  const routes = [
+    { coords: [[34.15,77.58],[28.61,77.20],[19.07,72.87]], color: "#d64a50" },
+    { coords: [[26.10,91.58],[26.25,73.05]], color: "#2777c5" },
+    { coords: [[12.97,77.59],[17.38,78.48],[8.52,76.93]], color: "#d99b23" },
+    { coords: [[34.08,74.79],[28.61,77.20]], color: "#19945d" }
+  ];
+
+  routes.forEach(r => {
+    routeLines.push(L.polyline(r.coords, {
+      color: r.color, weight: 2, dashArray: "6 7", opacity: 0.6
+    }).addTo(map));
+  });
+}
+
+function initMap() {
+  const el = document.getElementById("map");
+  if (!window.L) {
+    el.innerHTML = '<div style="padding:24px;color:#234">Map library unavailable.</div>';
+    return;
+  }
+  map = L.map("map", { zoomControl: false, scrollWheelZoom: false }).setView([23.2, 82.2], 4.5);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18, attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+  L.control.zoom({ position: "topleft" }).addTo(map);
+
+  drawRoutes();
+  drawAircraft();
+  setTimeout(() => map.invalidateSize(), 250);
+}
+
+/* ---------------- Radar logic ---------------- */
+function buildRadarBlips() {
+  const wrap = document.getElementById("radarBlips");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  const cLat = 28.56, cLng = 77.10; // Delhi AFS centre
+  const maxKm = 2300, R = 92;
+  demoAircraft.forEach(a => {
+    const dLatKm = (a.lat - cLat) * 111;
+    const dLngKm = (a.lng - cLng) * 97.5;
+    let x = 100 + (dLngKm / maxKm) * R;
+    let y = 100 - (dLatKm / maxKm) * R;
+    const dx = x - 100, dy = y - 100, dist = Math.hypot(dx, dy);
+    if (dist > R) { x = 100 + (dx / dist) * R; y = 100 + (dy / dist) * R; }
+    const blip = document.createElement("i");
+    blip.className = "radar-blip " + a.color;
+    blip.style.left = x + "px";
+    blip.style.top = y + "px";
+    blip.title = `${a.callsign} · ${a.name}`;
+    wrap.appendChild(blip);
+  });
+}
+
+function setRadar(on) {
+  const scope = document.getElementById("radarScope");
+  const btn = document.getElementById("radarBtn");
+  if (!scope || !btn) return;
+  radarActive = on;
+
+  if (on) {
+    scope.classList.add("show");
+    btn.classList.add("active");
+    buildRadarBlips();
+    if (map && !radarLayer) {
+      radarLayer = L.layerGroup().addTo(map);
+      afsStations.forEach(s => {
+        L.circle([s.lat, s.lng], {
+          radius: 120000, color: "#2fbf85", weight: 1, dashArray: "4 6",
+          fillColor: "#2fbf85", fillOpacity: 0.05
+        }).addTo(radarLayer);
+        L.marker([s.lat, s.lng], {
+          icon: L.divIcon({ className: "", html: '<div class="afs-marker">⌂</div>', iconSize: [22, 22], iconAnchor: [11, 11] })
+        }).bindTooltip(s.name, { direction: "top", offset: [0, -10] }).addTo(radarLayer);
+      });
+    }
+    showToast("Live radar enabled · AFS stations + aircraft blips");
+  } else {
+    scope.classList.remove("show");
+    btn.classList.remove("active");
+    if (map && radarLayer) { map.removeLayer(radarLayer); radarLayer = null; }
+    showToast("Live radar disabled");
+  }
+}
+
+// KPI Modal Data & Logic
+const kpiDetails = {
+  aircraft: {
+    title: "Total Aircraft Breakdown",
+    content: `
+      <table class="modal-table">
+        <thead><tr><th>Type</th><th>Total</th><th>Available</th></tr></thead>
+        <tbody>
+          <tr><td>Fighter Jets (Su-30MKI, Tejas, Rafale)</td><td>78</td><td><span class="table-status green-status">65</span></td></tr>
+          <tr><td>Transport (C-17, C-130, Chinook)</td><td>24</td><td><span class="table-status green-status">20</span></td></tr>
+          <tr><td>Surveillance (AEW&C, P-8I)</td><td>14</td><td><span class="table-status amber-status">10</span></td></tr>
+          <tr><td>Training (Hawk Mk 132)</td><td>8</td><td><span class="table-status green-status">8</span></td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:12px;font-size:11px;color:#718398;">Note: Availability depends on ongoing maintenance cycles and active missions.</p>
+    `
+  },
+  crew: {
+    title: "Available Crew Roster",
+    content: `
+      <table class="modal-table">
+        <thead><tr><th>Role</th><th>Available</th><th>Standby</th></tr></thead>
+        <tbody>
+          <tr><td>Fighter Pilots</td><td>120</td><td>15</td></tr>
+          <tr><td>Transport Pilots</td><td>80</td><td>10</td></tr>
+          <tr><td>Co-pilots / WSO</td><td>68</td><td>19</td></tr>
+          <tr><td>Ground Crew</td><td>44</td><td>0</td></tr>
+        </tbody>
+      </table>
+    `
+  },
+  missions: {
+    title: "Ongoing Missions",
+    content: `
+      <table class="modal-table">
+        <thead><tr><th>Mission ID</th><th>Type</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>M-101</td><td>Border Patrol (North)</td><td><span class="table-status blue-status">Active</span></td></tr>
+          <tr><td>M-102</td><td>Logistics (Central)</td><td><span class="table-status green-status">In Progress</span></td></tr>
+          <tr><td>M-103</td><td>Recon (East)</td><td><span class="table-status blue-status">Active</span></td></tr>
+          <tr><td>M-104</td><td>Training Sortie (South)</td><td><span class="table-status amber-status">Queued</span></td></tr>
+        </tbody>
+      </table>
+    `
+  },
+  fuel: {
+    title: "Fuel Readiness Across Bases",
+    content: `
+      <table class="modal-table">
+        <thead><tr><th>Airbase</th><th>Fuel Level</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Ambala AFS</td><td>95%</td><td><span class="table-status green-status">Optimal</span></td></tr>
+          <tr><td>Pune AFS</td><td>92%</td><td><span class="table-status green-status">Optimal</span></td></tr>
+          <tr><td>Jodhpur AFS</td><td>88%</td><td><span class="table-status amber-status">Refuel Scheduled</span></td></tr>
+          <tr><td>Tezpur AFS</td><td>90%</td><td><span class="table-status green-status">Optimal</span></td></tr>
+        </tbody>
+      </table>
+    `
+  },
+  alerts: {
+    title: "Active System Alerts",
+    content: `
+      <div class="alert-row"><span class="alert-symbol red-alert">!</span><div><b>Resource availability changed</b><small>Sample event · 5 min ago</small></div></div>
+      <div class="alert-row"><span class="alert-symbol amber-alert">!</span><div><b>Weather scenario updated</b><small>Sample event · 18 min ago</small></div></div>
+      <div class="alert-row"><span class="alert-symbol blue-alert">i</span><div><b>Plan requires human review</b><small>Sample event · 26 min ago</small></div></div>
+    `
+  }
+};
+
+/* ---------------- VayuDev chatbot ---------------- */
+const vayuQA = [
+  {
+    q: "Fleet status",
+    keys: ["fleet", "aircraft", "total", "planes", "strength", "inventory"],
+    a: "Fleet snapshot (demo):\n• 124 aircraft total\n• 78 fighter · 24 transport · 22 other\n• Available: 65 fighters, 20 transports, 10 surveillance, 8 trainers\nAsk me about fuel or alerts for more."
+  },
+  {
+    q: "Fuel readiness",
+    keys: ["fuel", "refuel", "readiness"],
+    a: "Fuel readiness is 92% overall:\n• Ambala AFS — 95% (optimal)\n• Pune AFS — 92% (optimal)\n• Jodhpur AFS — 88% (refuel scheduled)\n• Tezpur AFS — 90% (optimal)"
+  },
+  {
+    q: "Active alerts",
+    keys: ["alert", "notification", "warning", "issue"],
+    a: "3 active demo alerts:\n1. Resource availability changed (5 min ago)\n2. Weather scenario updated (18 min ago)\n3. Plan requires human review (26 min ago)\nOpen Alerts & Notifications for details."
+  },
+  {
+    q: "Weather outlook",
+    keys: ["weather", "rain", "wind", "visibility", "forecast", "cloud"],
+    a: "Illustrative scenario for India:\n• Now: 28°C, partly cloudy, wind 12 km/h, visibility good\n• +3 hr: 26°C, cloud cover\n• +6 hr: 24°C, light rain\nAirspace review is required before plan approval."
+  },
+  {
+    q: "Ongoing missions",
+    keys: ["mission", "task", "ongoing", "operation", "sortie"],
+    a: "8 ongoing demo missions — 3 patrol, 2 transport, 3 other.\nSample tasks: readiness assessment, logistics simulation, weather scenario, resource balancing.\nHuman approval is pending on one plan."
+  },
+  {
+    q: "GARUD recommendation",
+    keys: ["recommend", "decision", "approve", "next step", "suggest", "advise"],
+    a: "GARUD decision support suggests:\n1. Review resource balance\n2. Validate updated inputs\n3. Obtain human approval\nAll recommendations remain illustrative until reviewed by an authorised user."
+  },
+  {
+    q: "How does radar work?",
+    keys: ["radar", "tracking", "afs", "station", "blip", "scope"],
+    a: "Tap the 'Live Radar' button on the map to toggle radar mode.\nIt shows 12 AFS stations with range rings plus aircraft blips on the radar scope.\nThe sweep and blips are illustrative only."
+  },
+  {
+    q: "What can you do?",
+    keys: ["what can you do", "help", "capabilities", "who are you", "vayudev"],
+    a: "I'm VayuDev, the GARUD demo assistant.\nI can help with:\n• Fleet status\n• Fuel readiness\n• Active alerts\n• Weather outlook\n• Ongoing missions\n• Radar usage\n• GARUD recommendations\nTap a quick question below or type your own."
+  }
+];
+
+let chatOpened = false;
+let chatTypingTimer = null;
+
+function addChatMessage(text, who) {
+  const body = document.getElementById("chatBody");
+  const msg = document.createElement("div");
+  msg.className = "chat-msg " + who;
+  msg.textContent = text;
+  body.appendChild(msg);
+  body.scrollTop = body.scrollHeight;
+  return msg;
+}
+
+function findVayuAnswer(text) {
+  const t = text.toLowerCase();
+  if (/^(hi|hello|hey|namaste|namaskar)\b/.test(t)) {
+    return "Namaste! I'm VayuDev, your GARUD demo assistant. Ask me about fleet, fuel, alerts, weather, missions or radar.";
+  }
+  for (const item of vayuQA) {
+    if (item.keys.some(k => t.includes(k))) return item.a;
+  }
+  return "I'm a demo assistant and I couldn't match that question.\nTry one of the quick questions below — fleet status, fuel readiness, active alerts, weather outlook, ongoing missions or radar usage.";
+}
+
+function botRespond(userText) {
+  addChatMessage(userText, "user");
+  const body = document.getElementById("chatBody");
+  const typing = document.createElement("div");
+  typing.className = "chat-msg bot typing";
+  typing.innerHTML = "<span></span><span></span><span></span>";
+  body.appendChild(typing);
+  body.scrollTop = body.scrollHeight;
+
+  clearTimeout(chatTypingTimer);
+  chatTypingTimer = setTimeout(() => {
+    typing.remove();
+    addChatMessage(findVayuAnswer(userText), "bot");
+  }, 700);
+}
+
+function openChat() {
+  document.getElementById("chatPanel").classList.add("show");
+  if (!chatOpened) {
+    chatOpened = true;
+    setTimeout(() => {
+      addChatMessage("Namaste! I'm VayuDev — GARUD's AI decision assistant (demo).\nAsk me about fleet status, fuel readiness, alerts, weather, missions or radar.", "bot");
+    }, 220);
+  }
+}
+
+function closeChat() {
+  document.getElementById("chatPanel").classList.remove("show");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("currentDate").textContent = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  document.getElementById("weatherUpdated").textContent = "Updated " + new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
+  initMap();
+
+  // Initialize first aircraft
+  selectAircraft(demoAircraft[0]);
+
+  // Navigation events
+  document.querySelectorAll(".nav-item").forEach(b => b.addEventListener("click", (e) => {
+    document.querySelectorAll(".nav-item").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    const page = b.textContent.trim();
+    document.getElementById("pageTitle").textContent = page === "Dashboard" ? "Air Operations Dashboard" : page;
+    showToast(`${page} selected · demo interface`);
+    if (page === "Live Air Operations" && map) setTimeout(() => map.invalidateSize(), 100);
+  }));
+
+  // Map controls
+  document.getElementById("typeFilter").addEventListener("change", e => drawAircraft(e.target.value));
+  document.getElementById("mapReset").addEventListener("click", () => { if (map) map.setView([23.2, 82.2], 4.5); showToast("Map view reset"); });
+  document.getElementById("refreshBtn").addEventListener("click", () => showToast("Demo dashboard refreshed · no live defence data connected"));
+  document.getElementById("viewTasks").addEventListener("click", () => showToast("Showing all sample tasks"));
+  document.getElementById("topBell").addEventListener("click", () => showToast("3 sample notifications need review"));
+  document.getElementById("clearAlerts").addEventListener("click", () => {
+    document.getElementById("alertList").innerHTML = '<div class="alert-row" style="justify-content:center;color:#718398;font-size:11px;">No active demo alerts.</div>';
+    document.getElementById("alertCount").textContent = "0";
+    document.querySelector("#topBell em").textContent = "0";
+    showToast("Demo alerts cleared");
+  });
+
+  // Radar toggle
+  document.getElementById("radarBtn").addEventListener("click", () => setRadar(!radarActive));
+  document.getElementById("radarClose").addEventListener("click", () => setRadar(false));
+
+  // KPI Click Handlers
+  document.querySelectorAll('.kpi-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const type = card.getAttribute('data-kpi');
+      const data = kpiDetails[type];
+      if (data) {
+        document.getElementById("modalTitle").textContent = data.title;
+        document.getElementById("modalBody").innerHTML = data.content;
+        document.getElementById("kpiModal").classList.add("show");
+      }
+    });
+  });
+
+  // Modal Close
+  document.getElementById("modalClose").addEventListener("click", () => {
+    document.getElementById("kpiModal").classList.remove("show");
+  });
+  document.getElementById("kpiModal").addEventListener("click", (e) => {
+    if (e.target.id === "kpiModal") {
+      document.getElementById("kpiModal").classList.remove("show");
+    }
+  });
+
+  /* ---------------- Chatbot wiring ---------------- */
+  const chipsWrap = document.getElementById("chatChips");
+  vayuQA.forEach(item => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chat-chip";
+    chip.textContent = item.q;
+    chip.addEventListener("click", () => botRespond(item.q));
+    chipsWrap.appendChild(chip);
+  });
+
+  document.getElementById("chatLauncher").addEventListener("click", () => {
+    const panel = document.getElementById("chatPanel");
+    if (panel.classList.contains("show")) closeChat(); else openChat();
+  });
+  document.getElementById("chatClose").addEventListener("click", closeChat);
+
+  document.getElementById("chatForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("chatInput");
+    const val = input.value.trim();
+    if (!val) return;
+    input.value = "";
+    botRespond(val);
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GARUD AI | Live Air Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* --- Core Theme Variables --- */
+:root {
+  --navy: #061b2e; --navy2: #0a2b46; --blue: #1769b0; --ink: #102b46; 
+  --muted: #718398; --line: #dce5ed; --bg: #edf2f7; --green: #16854c; 
+  --amber: #c78319; --red: #d93838;
+  --tactical-bg: #091f33; --tactical-border: #1c4062; --tactical-green: #32c783; --tactical-text: #b8d4eb;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--ink); font-size: 13px; }
+button, select, input { font: inherit; outline: none; }
+button { cursor: pointer; }
+a { text-decoration: none; }
+
+/* --- Topbar & Header --- */
+.topbar { height: 42px; background: #061b2e; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid #29465e; gap: 14px; position: sticky; top: 0; z-index: 2000; }
+.gov-brand, .top-actions, .profile, .brand-lockup, .brand-title, .brand-centre, .panel-title, .heading-actions { display: flex; align-items: center; }
+.gov-brand { gap: 11px; min-width: 0; }
+.flag { width: 32px; height: 21px; border-radius: 2px; overflow: hidden; display: flex; flex-direction: column; flex-shrink: 0; }
+.flag i { flex: 1; } .flag i:nth-child(1) { background: #ff9933; } .flag i:nth-child(2) { background: #fff; } .flag i:nth-child(3) { background: #138808; }
+.gov-brand strong, .gov-brand span { display: block; }
+.gov-brand strong { font-size: 11px; } .gov-brand span { font-size: 9px; color: #c1d0de; margin-top: 2px; }
+.top-actions { gap: 16px; }
+.demo-pill { border: 1px solid #34546d; border-radius: 18px; padding: 5px 9px; font-size: 8px; letter-spacing: .8px; white-space: nowrap; color: #e4edf5; }
+.demo-pill b { display: inline-block; width: 6px; height: 6px; background: #32c783; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite; }
+.top-date { font-size: 10px; color: #d0dbe5; white-space: nowrap; }
+.icon-button { position: relative; border: 0; background: transparent; color: #fff; font-size: 18px; }
+.icon-button em { position: absolute; right: -7px; top: -6px; background: #df3c45; border-radius: 10px; padding: 2px 5px; font-size: 8px; font-style: normal; }
+.profile { gap: 8px; border-left: 1px solid #29465e; padding-left: 14px; }
+.avatar { height: 28px; width: 28px; border-radius: 50%; display: grid; place-items: center; background: #244965; font-size: 9px; font-weight: 800; }
+.profile strong, .profile small { display: block; white-space: nowrap; }
+.profile strong { font-size: 9px; } .profile small { font-size: 8px; color: #b8c9d8; margin-top: 3px; }
+.profile > span { font-size: 12px; color: #b8c9d8; }
+
+.brand-header { min-height: 70px; background: linear-gradient(105deg, #071d31 0%, #092740 58%, #071d31 100%); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #23445d; position: sticky; top: 42px; z-index: 1999; }
+.brand-centre { gap: 12px; }
+.garud-emblem { width: 44px; height: 38px; position: relative; display: grid; place-items: center; }
+.garud-emblem .wing { position: absolute; left: 0; top: 2px; width: 34px; height: 6px; background: #ff9933; transform: skewX(30deg); clip-path: polygon(0 0, 100% 0, 78% 100%, 20% 100%); }
+.garud-emblem .wing.w2 { top: 12px; background: #fff; width: 28px; left: 5px; }
+.garud-emblem .wing.w3 { top: 22px; background: #138808; width: 22px; left: 10px; }
+.brand-title h1 { font-size: 28px; font-weight: 800; letter-spacing: 1.6px; color: #fff; line-height: 1; }
+.brand-title .full-form { font-size: 9px; color: #f1f5f8; margin-top: 3px; }
+.motto { text-align: right; }
+.motto strong { font-size: 16px; color: #fff; }
+.motto .saffron { color: #ffb35e; }
+
+/* --- App Shell & Sidebar --- */
+.app-shell { display: flex; min-height: calc(100vh - 112px); }
+.sidebar { width: 214px; flex-shrink: 0; background: linear-gradient(180deg, #082844, #061b2e); color: #c7d5e3; padding: 15px 9px 12px; display: flex; flex-direction: column; position: sticky; top: 112px; height: calc(100vh - 112px); overflow-y: auto; }
+.sidebar-label { font-size: 9px; letter-spacing: 1.3px; color: #7f9bb3; padding: 3px 12px 12px; font-weight: 700; }
+.nav-item { width: 100%; border: 0; background: transparent; color: #c8d7e5; display: flex; align-items: center; gap: 12px; text-align: left; padding: 11px 12px; border-radius: 7px; margin-bottom: 4px; font-size: 11px; transition: .18s; text-decoration: none; font-weight: 700; }
+.nav-item:hover { background: #123c5e; color: #fff; }
+.nav-item.active { background: linear-gradient(90deg, #176fc2, #15518c); color: #fff; box-shadow: inset 3px 0 #65bdff; }
+.nav-icon { width: 20px; text-align: center; font-size: 16px; color: #a5bdd0; flex-shrink: 0; }
+.nav-item.active .nav-icon { color: #fff; }
+.sidebar-bottom { margin-top: auto; padding-top: 20px; }
+.side-status { display: flex; align-items: center; gap: 9px; border-top: 1px solid #28445a; padding: 15px 8px; }
+.pulse { width: 8px; height: 8px; background: #32c783; border-radius: 50%; box-shadow: 0 0 0 4px #164631; flex-shrink: 0; }
+.side-status b { font-size: 9px; color: #e2edf6; display: block; }
+.side-status small { font-size: 8px; color: #91a9bf; margin-top: 4px; display: block; }
+
+/* --- Main Content Area --- */
+.main-content { flex: 1; min-width: 0; padding: 15px; display: flex; flex-direction: column; gap: 15px; background: #edf2f7; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; }
+.eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; color: #71869b; margin-bottom: 4px; }
+.page-heading h2 { font-size: 20px; color: #102d4c; }
+.heading-actions { display: flex; gap: 12px; align-items: center; }
+.updated { font-size: 10px; color: #61778b; font-weight: 600; }
+.green-dot { display: inline-block; width: 7px; height: 7px; background: #1aa35e; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite; }
+.btn-outline { background: #fff; border: 1px solid #cdd9e5; color: #254864; padding: 7px 12px; border-radius: 6px; font-size: 10px; font-weight: 600; transition: 0.2s; }
+.btn-outline:hover { background: #f3f8fc; border-color: var(--blue); color: var(--blue); }
+
+/* --- Hero Ops Grid (Map + Tactical) --- */
+.ops-grid { display: grid; grid-template-columns: minmax(0, 2.6fr) minmax(320px, 1fr); gap: 15px; height: 60vh; min-height: 500px; }
+.panel { background: #fff; border: 1px solid #dce5ee; border-radius: 9px; overflow: hidden; box-shadow: 0 2px 10px rgba(13,43,69,0.04); display: flex; flex-direction: column; min-height: 0; }
+.panel-header { min-height: 42px; background: #fff; border-bottom: 1px solid #e2e9f0; display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; gap: 10px; flex-shrink: 0; }
+.panel-title { gap: 9px; }
+.title-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: #e9f2fb; color: #155c96; font-size: 14px; }
+.panel-title h3 { font-size: 13px; font-weight: 800; color: #163654; }
+.live-badge { font-size: 8px; color: #16844d; background: #e7f7ee; border-radius: 20px; padding: 5px 8px; font-weight: 800; letter-spacing: 0.5px; }
+
+/* Map Section */
+.map-wrap { flex: 1; position: relative; background: #d8e4ec; min-height: 400px; }
+#opsMap { height: 100%; width: 100%; z-index: 1; background: #091f33; }
+/* Dark/Tactical filter for standard OSM map */
+.leaflet-tile-pane { filter: grayscale(100%) invert(90%) contrast(120%) brightness(90%); }
+.map-legend { position: absolute; z-index: 500; left: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; background: rgba(9,31,51,0.9); border: 1px solid #1c4062; border-radius: 7px; padding: 10px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+.map-legend div { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #b8d4eb; font-weight: 600; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.fighter { background: #d64a50; } .transport { background: #2777c5; } .surveillance { background: #d99b23; } .training { background: #19945d; }
+.radar-overlay { position: absolute; top: 50%; left: 50%; width: 1000px; height: 1000px; margin: -500px 0 0 -500px; border-radius: 50%; background: conic-gradient(from 0deg, transparent 70%, rgba(50,199,131,0.15) 100%); animation: radar-spin 5s linear infinite; pointer-events: none; z-index: 400; }
+
+/* Tactical Panel */
+.tactical-panel { background: var(--tactical-bg); border-color: var(--tactical-border); color: var(--tactical-text); }
+.tactical-panel .panel-header { background: #071827; border-bottom: 1px solid var(--tactical-border); color: #fff; }
+.tactical-panel .panel-title h3 { color: #fff; }
+.tactical-panel .title-icon { background: #1a3c5e; color: #65bdff; }
+.tactical-section { padding: 12px; border-bottom: 1px solid var(--tactical-border); }
+.sec-title { font-size: 9px; font-weight: 800; letter-spacing: 1px; color: #65bdff; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
+.ac-list { max-height: 180px; overflow-y: auto; }
+.ac-list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-radius: 5px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; margin-bottom: 4px; background: rgba(255,255,255,0.02); }
+.ac-list-item:hover { background: rgba(255,255,255,0.05); }
+.ac-list-item.active { background: rgba(50,199,131,0.1); border-color: rgba(50,199,131,0.3); }
+.ac-list-item .name { font-size: 11px; font-weight: 700; color: #fff; display: block; }
+.ac-list-item .type { font-size: 9px; color: #8faec7; }
+.ac-list-item .status-badge { font-size: 8px; font-weight: 800; padding: 3px 6px; border-radius: 3px; text-transform: uppercase; }
+.bg-green { background: rgba(50,199,131,0.2); color: #32c783; border: 1px solid #32c783; }
+.bg-amber { background: rgba(217,155,35,0.2); color: #d99b23; border: 1px solid #d99b23; }
+.telemetry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.telemetry-box { background: #04121f; border: 1px solid #15334d; border-radius: 6px; padding: 10px; text-align: center; }
+.telemetry-box span { display: block; font-size: 8px; color: #5d85a8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.telemetry-box strong { display: block; font-size: 16px; color: var(--tactical-green); font-family: monospace; text-shadow: 0 0 5px rgba(50,199,131,0.3); }
+.telemetry-box strong.alt { color: #65bdff; text-shadow: 0 0 5px rgba(101,189,255,0.3); }
+.comms-log { flex: 1; overflow-y: auto; font-family: monospace; font-size: 10px; padding: 10px; background: #04121f; margin: 0 12px 12px 12px; border-radius: 6px; border: 1px solid #15334d; display: flex; flex-direction: column; gap: 6px; }
+.log-entry { line-height: 1.4; color: #8faec7; }
+.log-time { color: #5d85a8; margin-right: 5px; }
+.log-call { color: #ffb35e; font-weight: bold; }
+.log-msg { color: #c3d5e5; }
+.log-alert { color: #ff6b6b; }
+
+/* Leaflet Customization */
+.leaflet-container { font-family: 'Inter', Arial, sans-serif; }
+.aircraft-marker { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 16px; font-weight: 800; border: 2px solid #fff; box-shadow: 0 0 12px rgba(0,0,0,0.6); transition: transform 0.2s; position: relative; }
+.aircraft-marker.active-marker { box-shadow: 0 0 0 3px #fff, 0 0 20px rgba(50,199,131,0.8); transform: scale(1.15); border-color: #32c783; }
+
+/* --- NEW SECTION: Mission & Pilots --- */
+.section-title { font-size: 16px; font-weight: 800; color: #102d4c; margin: 10px 0 5px 0; display: flex; align-items: center; gap: 8px; }
+.section-title::before { content: ''; display: block; width: 4px; height: 18px; background: var(--blue); border-radius: 2px; }
+.mission-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+.mission-card { background: #fff; border: 1px solid #dce5ee; border-radius: 9px; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: transform 0.2s, box-shadow 0.2s; }
+.mission-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(13,43,69,0.08); border-color: #b0cde8; }
+.mission-info { display: flex; align-items: center; gap: 20px; }
+.mission-badge { width: 50px; height: 50px; border-radius: 10px; background: #e0efff; color: #155c9e; display: grid; place-items: center; font-size: 20px; }
+.mission-details h4 { font-size: 14px; color: #102d4c; margin-bottom: 4px; }
+.mission-details p { font-size: 11px; color: #718398; }
+.pilot-info { display: flex; align-items: center; gap: 12px; background: #f8fafc; padding: 8px 15px; border-radius: 8px; border: 1px solid #e2e9f0; min-width: 250px; }
+.pilot-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #1769b0, #0a2b46); color: white; display: grid; place-items: center; font-weight: 800; font-size: 12px; }
+.pilot-details span { display: block; font-size: 9px; color: #718398; text-transform: uppercase; letter-spacing: 0.5px; }
+.pilot-details strong { display: block; font-size: 12px; color: #102d4c; margin-top: 2px; }
+.action-buttons { display: flex; gap: 8px; }
+.btn-action { padding: 8px 12px; border-radius: 6px; font-size: 10px; font-weight: 700; display: flex; align-items: center; gap: 5px; border: none; transition: 0.2s; }
+.btn-comm { background: #e0efff; color: #1769b0; }
+.btn-comm:hover { background: #1769b0; color: #fff; }
+.btn-reassign { background: #fff3df; color: #c78319; }
+.btn-reassign:hover { background: #c78319; color: #fff; }
+.btn-logs { background: #e5f7ed; color: #16854c; }
+.btn-logs:hover { background: #16854c; color: #fff; }
+
+/* --- NEW SECTION: Fleet Gallery --- */
+.fleet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; margin-bottom: 20px; }
+.fleet-card { background: #fff; border: 1px solid #dce5ee; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; }
+.fleet-card:hover { transform: translateY(-4px); }
+.fleet-img { width: 100%; height: 160px; background-size: cover; background-position: center; position: relative; }
+.fleet-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(6,27,46,0.8), transparent 50%); }
+.fleet-status { position: absolute; top: 10px; right: 10px; background: rgba(50,199,131,0.9); color: #fff; font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 4px; backdrop-filter: blur(4px); }
+.fleet-title { position: absolute; bottom: 10px; left: 15px; color: #fff; font-size: 16px; font-weight: 800; z-index: 2; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.fleet-details { padding: 15px; }
+.fleet-specs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.spec-item span { display: block; font-size: 9px; color: #718398; text-transform: uppercase; }
+.spec-item strong { display: block; font-size: 12px; color: #102d4c; margin-top: 2px; }
+.btn-full { width: 100%; padding: 10px; background: #f8fafc; border: 1px solid #cdd9e5; color: #102d4c; font-weight: 700; border-radius: 6px; font-size: 11px; transition: 0.2s; }
+.btn-full:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+@keyframes radar-spin { 100% { transform: rotate(360deg); } }
+@keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #b0cde8; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #8faec7; }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="gov-brand"><div class="flag" aria-label="Indian tricolour"><i></i><i></i><i></i></div><div><strong>Government of India</strong><span>Ministry of Defence · Prototype</span></div></div>
+  <div class="top-actions"><span class="demo-pill"><b></b> SIMULATED DATA</span><span class="top-date" id="currentDate"></span><button class="icon-button" title="Notifications" id="topBell">♧<em>3</em></button><div class="profile"><div class="avatar">OC</div><div><strong>Operations Command</strong><small>Demo Administrator</small></div><span>⌄</span></div></div>
+</div>
+
+<!-- Brand Header -->
+<header class="brand-header">
+  <div class="brand-centre">
+    <div class="garud-emblem" aria-hidden="true"><i class="wing"></i><i class="wing w2"></i><i class="wing w3"></i><strong></strong></div>
+    <div class="brand-title"><h1>GARUD <span></span></h1><p class="full-form">Generalised AI for Resource Utilisation &amp; Decision Support</p></div>
+  </div>
+  <div class="motto"><strong>सुरक्षित आकाश</strong> <strong class="saffron">शक्तिशाली भारत</strong></div>
+</header>
+
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-label">WORKSPACE</div>
+    <a href="index.html" class="nav-item"><span class="nav-icon">▦</span>Dashboard</a>
+    <a href="live-operations.html" class="nav-item active"><span class="nav-icon">✈</span>Live Air Operations</a>
+    <a href="mission-planning.html" class="nav-item"><span class="nav-icon">▤</span>Mission Planning</a>
+    <a href="resource-management.html" class="nav-item"><span class="nav-icon">▣</span>Resource Management</a>
+    <a href="airspace-routes.html" class="nav-item"><span class="nav-icon">⌖</span>Airspace &amp; Routes</a>
+    <a href="aircraft-fleet.html" class="nav-item"><span class="nav-icon">✈</span>Aircraft &amp; Fleet</a>
+    <a href="weatherwatch-live.html" class="nav-item"><span class="nav-icon">☁</span>Weather &amp; Threats</a>
+    <a href="aioptimize.html" class="nav-item"><span class="nav-icon">✳</span>AI Optimisation</a>
+    <a href="reports-analytics.html" class="nav-item"><span class="nav-icon">▥</span>Reports &amp; Analytics</a>
+    <a href="alerts-notifications.html" class="nav-item"><span class="nav-icon">♧</span>Alerts &amp; Notifications</a>
+    <div class="sidebar-bottom">
+      <div class="side-status">
+        <span class="pulse"></span>
+        <div><b>Uplink Nominal</b><small>SatCom Link Active</small></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-heading">
+      <div><p class="eyebrow">TACTICAL COMMAND</p><h2>Live Air Operations Center</h2></div>
+      <div class="heading-actions">
+        <span class="updated"><span class="green-dot"></span> LIVE FEED ACTIVE</span>
+        <button class="btn-outline" id="refreshBtn">↻ Sync Telemetry</button>
+      </div>
+    </div>
+
+    <!-- MAP & TACTICAL PANEL -->
+    <div class="ops-grid">
+      <article class="panel map-panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="title-icon">✈</span><h3>Indian Airspace - Active Sorties</h3><span class="live-badge"><i></i> LIVE</span></div>
+          <div style="font-size:10px; color:#718398; font-weight:600;">Showing 6 Active Tracks</div>
+        </div>
+        <div class="map-wrap">
+          <div id="opsMap"></div>
+          <div class="radar-overlay"></div>
+          <div class="map-legend">
+            <div><i class="legend-dot fighter"></i>Fighter / Interceptor</div>
+            <div><i class="legend-dot transport"></i>Heavy Transport</div>
+            <div><i class="legend-dot surveillance"></i>AEW&C / Surveillance</div>
+            <div><i class="legend-dot training"></i>Training Sortie</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel tactical-panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="title-icon">⌖</span><h3>Tactical Data Link</h3></div>
+          <span style="font-size:9px;color:#32c783;font-weight:700;">● ENCRYPTED</span>
+        </div>
+        <div class="tactical-section" style="padding-bottom:0; border-bottom:none;">
+          <div class="sec-title">Active Assets <span>Click to track</span></div>
+          <div class="ac-list" id="acList"></div>
+        </div>
+        <div class="tactical-section" style="flex-shrink:0;">
+          <div class="sec-title">Target Telemetry <span id="telemetryTarget" style="color:#fff;">VIPER-1</span></div>
+          <div class="telemetry-grid">
+            <div class="telemetry-box"><span>Speed</span><strong id="telSpeed">M 1.4</strong></div>
+            <div class="telemetry-box"><span>Altitude</span><strong class="alt" id="telAlt">FL 360</strong></div>
+            <div class="telemetry-box"><span>Heading</span><strong id="telHdg">045°</strong></div>
+            <div class="telemetry-box"><span>Fuel</span><strong id="telFuel">82%</strong></div>
+          </div>
+        </div>
+        <div class="sec-title" style="padding: 0 12px; margin-bottom: 5px; color:#65bdff; font-size:9px; letter-spacing:1px;">SECURE COMMS LOG</div>
+        <div class="comms-log" id="commsLog"></div>
+      </article>
+    </div>
+
+    <!-- NEW SECTION: MISSION CONTROL & PILOTS -->
+    <div class="section-title">Mission Control & Pilot Roster</div>
+    <div class="mission-grid">
+      
+      <!-- Mission 1 -->
+      <div class="mission-card">
+        <div class="mission-info">
+          <div class="mission-badge">⚔</div>
+          <div class="mission-details">
+            <h4>Operation Vayu Shakti</h4>
+            <p>Sector: Western Border | Aircraft: Su-30MKI (VIPER-1)</p>
+          </div>
+        </div>
+        <div class="pilot-info">
+          <div class="pilot-avatar">AS</div>
+          <div class="pilot-details">
+            <span>Assigned Pilot</span>
+            <strong>Wg Cdr Arjun Singh</strong>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button class="btn-action btn-comm" onclick="alert('Opening secure comms link to Wg Cdr Arjun Singh...')">📡 Contact</button>
+          <button class="btn-action btn-reassign" onclick="alert('Opening pilot reassignment module...')">🔄 Reassign</button>
+          <button class="btn-action btn-logs" onclick="alert('Loading mission logs for Operation Vayu Shakti...')">📄 Logs</button>
+        </div>
+      </div>
+
+      <!-- Mission 2 -->
+      <div class="mission-card">
+        <div class="mission-info">
+          <div class="mission-badge" style="background:#fff3df;color:#c78319;">🛡</div>
+          <div class="mission-details">
+            <h4>Logistics Supply Drop</h4>
+            <p>Sector: Northern High Altitude | Aircraft: C-130J (HERKY-2)</p>
+          </div>
+        </div>
+        <div class="pilot-info">
+          <div class="pilot-avatar">RK</div>
+          <div class="pilot-details">
+            <span>Assigned Pilot</span>
+            <strong>Sqn Ldr Ravi Kumar</strong>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button class="btn-action btn-comm" onclick="alert('Opening secure comms link to Sqn Ldr Ravi Kumar...')">📡 Contact</button>
+          <button class="btn-action btn-reassign" onclick="alert('Opening pilot reassignment module...')">🔄 Reassign</button>
+          <button class="btn-action btn-logs" onclick="alert('Loading logistics manifest...')">📄 Logs</button>
+        </div>
+      </div>
+
+      <!-- Mission 3 -->
+      <div class="mission-card">
+        <div class="mission-info">
+          <div class="mission-badge" style="background:#e8e9ff;color:#5656b4;">📡</div>
+          <div class="mission-details">
+            <h4>AEW&C Radar Sweep</h4>
+            <p>Sector: Eastern Border | Aircraft: Embraer Netra (NETRA-3)</p>
+          </div>
+        </div>
+        <div class="pilot-info">
+          <div class="pilot-avatar">MP</div>
+          <div class="pilot-details">
+            <span>Assigned Pilot</span>
+            <strong>Gp Capt Meera Pillai</strong>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button class="btn-action btn-comm" onclick="alert('Opening secure comms link to Gp Capt Meera Pillai...')">📡 Contact</button>
+          <button class="btn-action btn-reassign" onclick="alert('Opening pilot reassignment module...')">🔄 Reassign</button>
+          <button class="btn-action btn-logs" onclick="alert('Loading radar telemetry logs...')">📄 Logs</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- NEW SECTION: FLEET GALLERY -->
+    <div class="section-title">Active Fleet Visuals</div>
+    <div class="fleet-grid">
+      
+      <!-- Fleet Card 1 -->
+      <div class="fleet-card">
+        <div class="fleet-img" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTsFWXwOKJ_kJ77Mc05PJqFvA8FInjhc04zUXnO1nd5upQNWY1R62kS4UA&s=10');">
+          <div class="fleet-status">IN FLIGHT</div>
+          <div class="fleet-title">Sukhoi Su-30MKI</div>
+        </div>
+        <div class="fleet-details">
+          <div class="fleet-specs">
+            <div class="spec-item"><span>Role</span><strong>Air Superiority</strong></div>
+            <div class="spec-item"><span>Speed</span><strong>2,120 km/h</strong></div>
+            <div class="spec-item"><span>Payload</span><strong>8,000 kg</strong></div>
+            <div class="spec-item"><span>Status</span><strong style="color:var(--green)">Optimal</strong></div>
+          </div>
+          <button class="btn-full" onclick="alert('Loading full telemetry and maintenance history for Sukhoi Su-30MKI...')">View Full Aircraft Telemetry</button>
+        </div>
+      </div>
+
+      <!-- Fleet Card 2 -->
+      <div class="fleet-card">
+        <div class="fleet-img" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTsML7hijkeLWvyw5TKSJ4fAkEbosa8srZBpGjsN0Dh6w&s=10');">
+          <div class="fleet-status" style="background:rgba(199,131,25,0.9);">IN TRANSIT</div>
+          <div class="fleet-title">C-130J Hercules</div>
+        </div>
+        <div class="fleet-details">
+          <div class="fleet-specs">
+            <div class="spec-item"><span>Role</span><strong>Tactical Airlift</strong></div>
+            <div class="spec-item"><span>Speed</span><strong>670 km/h</strong></div>
+            <div class="spec-item"><span>Payload</span><strong>18 Tons</strong></div>
+            <div class="spec-item"><span>Status</span><strong style="color:var(--green)">Optimal</strong></div>
+          </div>
+          <button class="btn-full" onclick="alert('Loading full telemetry and maintenance history for C-130J Hercules...')">View Full Aircraft Telemetry</button>
+        </div>
+      </div>
+
+      <!-- Fleet Card 3 -->
+      <div class="fleet-card">
+        <div class="fleet-img" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXu_o1nhYANxs8JKUQuApgeMA_XMccqoUBEhYJnCVLIg&s=10');">
+          <div class="fleet-status">IN FLIGHT</div>
+          <div class="fleet-title">Embraer Netra AEW&C</div>
+        </div>
+        <div class="fleet-details">
+          <div class="fleet-specs">
+            <div class="spec-item"><span>Role</span><strong>Early Warning</strong></div>
+            <div class="spec-item"><span>Speed</span><strong>780 km/h</strong></div>
+            <div class="spec-item"><span>Payload</span><strong>Radar Suite</strong></div>
+            <div class="spec-item"><span>Status</span><strong style="color:var(--amber)">Review</strong></div>
+          </div>
+          <button class="btn-full" onclick="alert('Loading full telemetry and maintenance history for Embraer Netra AEW&C...')">View Full Aircraft Telemetry</button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const flights = [
+  { id: "A-01", callsign: "VIPER-1", name: "Sukhoi Su-30MKI", type: "Fighter", lat: 32.50, lng: 75.80, heading: 45, speed: "M 1.4", alt: "FL 360", fuel: "82%", color: "fighter" },
+  { id: "B-02", callsign: "HERKY-2", name: "C-130J Hercules", type: "Transport", lat: 26.85, lng: 78.50, heading: 120, speed: "450 km/h", alt: "FL 220", fuel: "64%", color: "transport" },
+  { id: "C-03", callsign: "NETRA-3", name: "Embraer AEW&C", type: "Surveillance", lat: 24.50, lng: 88.20, heading: 270, speed: "680 km/h", alt: "FL 310", fuel: "78%", color: "surveillance" },
+  { id: "D-04", callsign: "HAWK-4", name: "Hawk Mk 132", type: "Training", lat: 18.20, lng: 74.10, heading: 90, speed: "720 km/h", alt: "FL 180", fuel: "92%", color: "training" },
+  { id: "E-05", callsign: "GLOBEMASTER", name: "C-17 Globemaster III", type: "Transport", lat: 13.50, lng: 80.10, heading: 340, speed: "800 km/h", alt: "FL 280", fuel: "55%", color: "transport" },
+  { id: "F-06", callsign: "RAPTOR-6", name: "Dassault Rafale", type: "Fighter", lat: 29.10, lng: 73.50, heading: 15, speed: "M 1.6", alt: "FL 380", fuel: "71%", color: "fighter" }
+];
+
+let map = null;
+let markers = {};
+let activeFlightId = "A-01";
+let telemetryInterval = null;
+
+function initMap() {
+  map = L.map("opsMap", { zoomControl: false, scrollWheelZoom: true }).setView([23.5, 80.5], 5.5);
+  
+  // Using standard OSM tiles which don't require an API key. 
+  // The CSS filter in .leaflet-tile-pane makes it look like a dark tactical map.
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18, attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+  
+  L.control.zoom({ position: "topright" }).addTo(map);
+  
+  flights.forEach(f => {
+    const trailLat = f.lat - (Math.cos(f.heading * Math.PI / 180) * 1.5);
+    const trailLng = f.lng - (Math.sin(f.heading * Math.PI / 180) * 1.5);
+    L.polyline([[trailLat, trailLng], [f.lat, f.lng]], {
+      color: f.color === 'fighter' ? '#d64a50' : f.color === 'transport' ? '#2777c5' : f.color === 'surveillance' ? '#d99b23' : '#19945d',
+      weight: 2, dashArray: "4 4", opacity: 0.8
+    }).addTo(map);
+
+    const icon = L.divIcon({
+      className: "",
+      html: `<div class="aircraft-marker ${f.color}" id="marker-${f.id}" style="transform: rotate(${f.heading}deg);">✈</div>`,
+      iconSize: [34, 34], iconAnchor: [17, 17]
+    });
+    
+    const m = L.marker([f.lat, f.lng], { icon: icon }).addTo(map);
+    m.on('click', () => selectFlight(f.id));
+    markers[f.id] = m;
+  });
+
+  document.getElementById(`marker-${activeFlightId}`).classList.add('active-marker');
+}
+
+function selectFlight(id) {
+  activeFlightId = id;
+  const flight = flights.find(f => f.id === id);
+  
+  Object.keys(markers).forEach(k => {
+    const el = document.getElementById(`marker-${k}`);
+    if(el) el.classList.remove('active-marker');
+  });
+  document.getElementById(`marker-${id}`).classList.add('active-marker');
+  
+  map.flyTo([flight.lat, flight.lng], 7, { duration: 1.5 });
+  
+  document.getElementById("telemetryTarget").textContent = flight.callsign;
+  document.getElementById("telSpeed").textContent = flight.speed;
+  document.getElementById("telAlt").textContent = flight.alt;
+  document.getElementById("telHdg").textContent = flight.heading.toString().padStart(3, '0') + "°";
+  document.getElementById("telFuel").textContent = flight.fuel;
+  
+  renderAcList();
+  addCommsLog("SYS", `Target Locked: ${flight.callsign} (${flight.name})`, "log-alert");
+}
+
+function renderAcList() {
+  const list = document.getElementById("acList");
+  list.innerHTML = "";
+  flights.forEach(f => {
+    const isActive = f.id === activeFlightId;
+    const statusClass = f.fuel < 60 ? "bg-amber" : "bg-green";
+    const statusText = f.fuel < 60 ? "RTB" : "Active";
+    
+    list.innerHTML += `
+      <div class="ac-list-item ${isActive ? 'active' : ''}" onclick="selectFlight('${f.id}')">
+        <div>
+          <span class="name">${f.callsign}</span>
+          <span class="type">${f.name}</span>
+        </div>
+        <span class="status-badge ${statusClass}">${statusText}</span>
+      </div>
+    `;
+  });
+}
+
+function addCommsLog(sender, msg, extraClass = "") {
+  const log = document.getElementById("commsLog");
+  const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  const entry = document.createElement("div");
+  entry.className = `log-entry ${extraClass}`;
+  entry.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-call">${sender}:</span> <span class="log-msg">${msg}</span>`;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function startSimulation() {
+  // Move Aircraft
+  setInterval(() => {
+    flights.forEach(f => {
+      const speed = 0.005;
+      f.lat += Math.cos(f.heading * Math.PI / 180) * speed;
+      f.lng += Math.sin(f.heading * Math.PI / 180) * speed;
+      if(markers[f.id]) markers[f.id].setLatLng([f.lat, f.lng]);
+    });
+  }, 2000);
+
+  // Update Telemetry
+  telemetryInterval = setInterval(() => {
+    const flight = flights.find(f => f.id === activeFlightId);
+    if(!flight) return;
+    
+    if(flight.speed.includes("M ")) {
+      let mach = parseFloat(flight.speed.replace("M ", ""));
+      mach = (mach + (Math.random() * 0.1 - 0.05)).toFixed(1);
+      flight.speed = `M ${mach}`;
+    } else {
+      let kmh = parseInt(flight.speed);
+      kmh = Math.round(kmh + (Math.random() * 20 - 10));
+      flight.speed = `${kmh} km/h`;
+    }
+    
+    let alt = parseInt(flight.alt.replace("FL ", ""));
+    alt = Math.round(alt + (Math.random() * 4 - 2));
+    flight.alt = `FL ${alt}`;
+    
+    document.getElementById("telSpeed").textContent = flight.speed;
+    document.getElementById("telAlt").textContent = flight.alt;
+    
+  }, 1500);
+
+  // Random Comms
+  const commsMessages = [
+    { s: "AWACS", m: "All units, maintain sector patrol." },
+    { s: "VIPER-1", m: "Copy that, moving to waypoint Delta." },
+    { s: "GROUND", m: "Fuel bowser en route to Alpha base." },
+    { s: "NETRA-3", m: "Bogey detected, 12 o'clock, 40 miles." },
+    { s: "RAPTOR-6", m: "Visual confirmed, no hostile intent." },
+    { s: "SYS", m: "Data link synchronization complete." }
+  ];
+  
+  setInterval(() => {
+    const msg = commsMessages[Math.floor(Math.random() * commsMessages.length)];
+    addCommsLog(msg.s, msg.m);
+  }, 4500);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("currentDate").textContent = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  
+  initMap();
+  renderAcList();
+  
+  addCommsLog("SYS", "Uplink established. SatCom nominal.", "log-alert");
+  addCommsLog("AWACS", "Airspace sector Alpha-1 secured.");
+  addCommsLog("VIPER-1", "Requesting telemetry lock on target.");
+  
+  selectFlight("A-01");
+  startSimulation();
+
+  document.getElementById("refreshBtn").addEventListener("click", () => {
+    addCommsLog("SYS", "Manual telemetry sync requested... Done.");
+  });
+
+  document.getElementById("topBell").addEventListener("click", () => {
+    addCommsLog("ALERT", "3 unread tactical messages.", "log-alert");
+  });
+});
+</script>
+</body>
+</html>

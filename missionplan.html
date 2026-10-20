@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GARUD AI | Mission Planning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* --- Light Theme Variables --- */
+:root {
+  --navy: #061b2e; --navy2: #0a2b46; --blue: #1769b0; --ink: #102b46; 
+  --muted: #718398; --line: #dce5ee; --bg: #edf2f7; --green: #16854c; 
+  --amber: #c78319; --red: #d93838; --accent: #1769b0;
+  --mono: 'JetBrains Mono', monospace;
+  --in: #f4f7fc;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--ink); font-size: 13px; }
+button, input, select { font: inherit; outline: none; }
+button { cursor: pointer; }
+a { text-decoration: none; }
+
+/* --- Topbar & Header --- */
+.topbar { height: 42px; background: #061b2e; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid #29465e; gap: 14px; position: sticky; top: 0; z-index: 2000; }
+.gov-brand, .top-actions, .profile, .brand-centre { display: flex; align-items: center; }
+.gov-brand { gap: 11px; }
+.flag { width: 32px; height: 21px; border-radius: 2px; overflow: hidden; display: flex; flex-direction: column; }
+.flag i { flex: 1; } .flag i:nth-child(1) { background: #ff9933; } .flag i:nth-child(2) { background: #fff; } .flag i:nth-child(3) { background: #138808; }
+.gov-brand strong { font-size: 11px; display: block; } .gov-brand span { font-size: 9px; color: #c1d0de; display: block; }
+.top-actions { gap: 16px; }
+.demo-pill { border: 1px solid #34546d; border-radius: 18px; padding: 5px 9px; font-size: 8px; letter-spacing: .8px; white-space: nowrap; color: #e4edf5; }
+.demo-pill b { display: inline-block; width: 6px; height: 6px; background: #32c783; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite; }
+.top-date { font-size: 10px; color: #d0dbe5; white-space: nowrap; font-family: var(--mono); }
+.icon-button { position: relative; border: 0; background: transparent; color: #fff; font-size: 18px; }
+.icon-button em { position: absolute; right: -7px; top: -6px; background: #df3c45; border-radius: 10px; padding: 2px 5px; font-size: 8px; font-style: normal; }
+.profile { gap: 8px; border-left: 1px solid #29465e; padding-left: 14px; }
+.avatar { height: 28px; width: 28px; border-radius: 50%; display: grid; place-items: center; background: #244965; font-size: 9px; font-weight: 800; }
+.profile strong { font-size: 9px; display: block; } .profile small { font-size: 8px; color: #b8c9d8; display: block; margin-top: 3px; }
+
+.brand-header { min-height: 70px; background: linear-gradient(105deg, #071d31 0%, #092740 58%, #071d31 100%); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #23445d; position: sticky; top: 42px; z-index: 1999; }
+.brand-centre { gap: 12px; }
+.garud-emblem { width: 44px; height: 38px; position: relative; display: grid; place-items: center; }
+.garud-emblem .wing { position: absolute; left: 0; top: 2px; width: 34px; height: 6px; background: #ff9933; transform: skewX(30deg); clip-path: polygon(0 0, 100% 0, 78% 100%, 20% 100%); }
+.garud-emblem .wing.w2 { top: 12px; background: #fff; width: 28px; left: 5px; }
+.garud-emblem .wing.w3 { top: 22px; background: #138808; width: 22px; left: 10px; }
+.brand-title h1 { font-size: 28px; font-weight: 800; letter-spacing: 1.6px; color: #fff; line-height: 1; }
+.brand-title .full-form { font-size: 9px; color: #f1f5f8; margin-top: 3px; }
+.motto { text-align: right; }
+.motto strong { font-size: 16px; color: #fff; }
+.motto .saffron { color: #ffb35e; }
+
+/* --- App Shell & Sidebar --- */
+.app-shell { display: flex; min-height: calc(100vh - 112px); }
+.sidebar { width: 214px; flex-shrink: 0; background: linear-gradient(180deg, #082844, #061b2e); color: #c7d5e3; padding: 15px 9px 12px; display: flex; flex-direction: column; position: sticky; top: 112px; height: calc(100vh - 112px); overflow-y: auto; }
+.sidebar-label { font-size: 9px; letter-spacing: 1.3px; color: #7f9bb3; padding: 3px 12px 12px; font-weight: 700; }
+.nav-item { width: 100%; border: 0; background: transparent; color: #c8d7e5; display: flex; align-items: center; gap: 12px; text-align: left; padding: 11px 12px; border-radius: 7px; margin-bottom: 4px; font-size: 11px; transition: .18s; text-decoration: none; font-weight: 700; }
+.nav-item:hover { background: #123c5e; color: #fff; }
+.nav-item.active { background: linear-gradient(90deg, #176fc2, #15518c); color: #fff; box-shadow: inset 3px 0 #65bdff; }
+.nav-icon { width: 20px; text-align: center; font-size: 16px; color: #a5bdd0; flex-shrink: 0; }
+.nav-item.active .nav-icon { color: #fff; }
+.sidebar-bottom { margin-top: auto; padding-top: 20px; }
+.side-status { display: flex; align-items: center; gap: 9px; border-top: 1px solid #28445a; padding: 15px 8px; }
+.pulse { width: 8px; height: 8px; background: #32c783; border-radius: 50%; box-shadow: 0 0 0 4px #164631; flex-shrink: 0; animation: pulse 2s infinite; }
+.side-status b { font-size: 9px; color: #e2edf6; display: block; }
+.side-status small { font-size: 8px; color: #91a9bf; margin-top: 4px; display: block; }
+
+/* --- Main Content --- */
+.main-content { flex: 1; min-width: 0; padding: 15px; display: flex; flex-direction: column; gap: 15px; background: #edf2f7; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; }
+.eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; color: var(--blue); margin-bottom: 4px; }
+.page-heading h2 { font-size: 20px; color: #102d4c; }
+.heading-actions { display: flex; gap: 12px; align-items: center; }
+.updated { font-size: 10px; color: #61778b; font-weight: 600; }
+.green-dot { display: inline-block; width: 7px; height: 7px; background: #1aa35e; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite; }
+
+/* --- UI Components --- */
+.p { background: #fff; border: 1px solid #dce5ee; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 10px; }
+.p h3 { margin: 0; font-size: 12px; color: #163654; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #edf1f5; padding-bottom: 10px; }
+.p h3 span { display: flex; align-items: center; gap: 8px; }
+.kv { font-size: 20px; font-weight: 700; font-family: var(--mono); color: var(--ink); margin-top: 2px; }
+.mt { color: var(--muted); font-size: 10px; line-height: 1.4; }
+.sim { font-size: 9px; border: 1px dashed var(--muted); color: var(--muted); border-radius: 4px; padding: 2px 6px; font-weight: 700; letter-spacing: 0.5px; }
+
+button, select, input { font: inherit; color: var(--ink); }
+.bt { background: var(--blue); color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 700; font-size: 11px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.bt:hover { background: #12568f; }
+.bt.o { background: #fff; border: 1px solid #cdd9e5; color: #254864; }
+.bt.o:hover { background: #f3f8fc; border-color: var(--blue); color: var(--blue); }
+.bt.o.on { border-color: var(--blue); color: var(--blue); background: #e0efff; }
+.bt:disabled { opacity: 0.5; cursor: not-allowed; }
+select, input[type=text] { background: #f8fafc; border: 1px solid #cdd9e5; border-radius: 6px; padding: 8px 10px; font-size: 11px; font-weight: 600; color: #102d4c; width: 100%; }
+
+.g { display: grid; gap: 15px; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.k { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
+
+/* --- Specific Layouts --- */
+.mpg { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 15px; }
+@media(max-width:1000px) { .mpg { grid-template-columns: 1fr; } }
+.chg { border-color: #f97316 !important; box-shadow: 0 0 0 2px #f9731633 !important; }
+.mph { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.mph label { font-size: 10px; color: var(--muted); font-weight: 700; display: flex; flex-direction: column; gap: 4px; }
+
+/* --- Map Specifics --- */
+.mpz { position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 5px; z-index: 10; }
+.mpz button { width: 32px; height: 32px; padding: 0; font-size: 16px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #dce5ee; color: #102d4c; border-radius: 4px; }
+.pz { animation: pz 1.6s ease-in-out infinite; }
+@keyframes pz { 50% { opacity: .45; } }
+.fl { stroke-dasharray: 10 7; animation: fl 1.2s linear infinite; }
+@keyframes fl { to { stroke-dashoffset: -34; } }
+.lg { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.lg span { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); font-weight: 600; }
+.lg i { width: 10px; height: 10px; border-radius: 50%; }
+
+/* --- Lists & Cards --- */
+.rc { border: 1px solid #e2e9f0; border-radius: 6px; padding: 12px; background: #fff; transition: 0.2s; }
+.rc.on { border-color: var(--blue); box-shadow: 0 0 0 2px #1769b033; background: #f8fafc; }
+.rc.rec { border-top: 3px solid var(--blue); }
+.row { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid #edf1f5; }
+.row:first-child { border-top: 0; }
+
+/* --- Timeline --- */
+.tl { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+.ts { flex: 1; min-width: 120px; border: 1px solid #dce5ee; border-radius: 6px; padding: 12px 10px; background: #f8fafc; text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); }
+.ts.d { border-color: var(--green); background: #e5f7ed; color: var(--green); }
+.ts.cur { border-color: var(--blue); box-shadow: 0 0 0 2px #1769b033; background: #e0efff; color: var(--blue); }
+.ts div { font-size: 20px; margin-bottom: 5px; }
+
+/* --- Modal --- */
+.md { position: fixed; inset: 0; background: rgba(6,27,46,0.6); backdrop-filter: blur(2px); z-index: 3000; display: grid; place-items: center; padding: 16px; opacity: 0; pointer-events: none; transition: 0.2s; }
+.md.show { opacity: 1; pointer-events: auto; }
+.md > div { background: #fff; border: 1px solid #dce5ee; border-radius: 10px; max-width: 500px; width: 100%; max-height: 85vh; overflow: auto; padding: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); transform: translateY(20px); transition: 0.2s; }
+.md.show > div { transform: translateY(0); }
+.md ul { padding-left: 20px; font-size: 12px; color: #102d4c; line-height: 1.8; }
+.md li b { font-family: var(--mono); color: var(--blue); }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #b0cde8; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #8faec7; }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="gov-brand">
+    <div class="flag"><i></i><i></i><i></i></div>
+    <div><strong>Government of India</strong><span>Ministry of Defence · Prototype</span></div>
+  </div>
+  <div class="top-actions">
+    <span class="demo-pill"><b></b> SIMULATED DATA</span>
+    <span class="top-date" id="currentDate"></span>
+    <button class="icon-button" title="Notifications">♧<em>3</em></button>
+    <div class="profile">
+      <div class="avatar">OC</div>
+      <div><strong>Operations Command</strong><small>Demo Administrator</small></div>
+    </div>
+  </div>
+</div>
+
+<!-- Brand Header -->
+<header class="brand-header">
+  <div class="brand-centre">
+    <div class="garud-emblem"><i class="wing"></i><i class="wing w2"></i><i class="wing w3"></i></div>
+    <div class="brand-title"><h1>GARUD <span></span></h1><p class="full-form">Generalised AI for Resource Utilisation &amp; Decision Support</p></div>
+  </div>
+  <div class="motto"><strong>सुरक्षित आकाश</strong> <strong class="saffron">शक्तिशाली भारत</strong></div>
+</header>
+
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-label">WORKSPACE</div>
+    <a href="index.html" class="nav-item"><span class="nav-icon">▦</span>Dashboard</a>
+    <a href="live-operations.html" class="nav-item"><span class="nav-icon">✈</span>Live Air Operations</a>
+    <a href="mission-planning.html" class="nav-item active"><span class="nav-icon">▤</span>Mission Planning</a>
+    <a href="resource-management.html" class="nav-item"><span class="nav-icon">▣</span>Resource Management</a>
+    <a href="airspace-routes.html" class="nav-item"><span class="nav-icon">⌖</span>Airspace &amp; Routes</a>
+    <a href="aircraft-fleet.html" class="nav-item"><span class="nav-icon">✈</span>Aircraft &amp; Fleet</a>
+    <a href="weatherwatch-live.html" class="nav-item"><span class="nav-icon">☁</span>Weather &amp; Threats</a>
+    <a href="aioptimize.html" class="nav-item"><span class="nav-icon">✳</span>AI Optimisation</a>
+    <a href="reports-analytics.html" class="nav-item"><span class="nav-icon">▥</span>Reports &amp; Analytics</a>
+    <a href="alerts-notifications.html" class="nav-item"><span class="nav-icon">♧</span>Alerts &amp; Notifications</a>
+    <div class="sidebar-bottom">
+      <div class="side-status">
+        <span class="pulse"></span>
+        <div><b>Uplink Nominal</b><small>SatCom Link Active</small></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-content" id="app">
+    <!-- Injected by JS -->
+  </main>
+</div>
+
+<script>
+const SC = { Low: '#22c55e', Moderate: '#eab308', High: '#f97316', Critical: '#ef4444' };
+const sevTag = s => `<span class="tag" style="background:${SC[s]}">${s}</span>`;
+const SIM = '<span class="sim">SIMULATED</span>';
+const log = () => {};
+const $ = s => document.querySelector(s);
+const sel = (f, o, v) => `<select data-f="${f}">${o.map(x => `<option ${x == v ? 'selected' : ''}>${x}</option>`).join('')}</select>`;
+let S = { modal: null };
+
+/* ===== MISSION PLANNING DATA ===== */
+const MP_C = [
+  { id: 'Alpha', n: 'Contact Alpha', st: 'Active', d: 18, r: 'Moderate', p: [520, 90] },
+  { id: 'Bravo', n: 'Contact Bravo', st: 'Monitoring', d: 24, r: 'High', p: [480, 250] },
+  { id: 'Charlie', n: 'Contact Charlie', st: 'Confirmed', d: 12, r: 'Low', p: [300, 70] }
+];
+
+const MP_S = {
+  'Normal Conditions': { wx: 'Partly Cloudy', ic: '⛅', sub: 'No rain', t: 31, vis: 6, wind: 18, thr: 'MODERATE', com: 'STABLE', wl: 'Moderate', hz: 46, rec: 'A', pen: 1, ai: '✅', ah: 'Conditions acceptable.', at: 'Recommended route balances distance and exposure while staying clear of the moderate-risk zone.', r: { A: ['LOW', 'LOW'], B: ['MEDIUM', 'MEDIUM'], C: ['LOW', 'LOW'] } },
+  'Adverse Weather': { wx: 'Heavy Rain', ic: '🌧️', sub: 'Heavy rain', t: 27, vis: 3, wind: 46, thr: 'MODERATE', com: 'DEGRADED', wl: 'Severe', hz: 46, rec: 'C', pen: 1.15, ai: '🌧️', ah: 'Weather conditions affecting route.', at: 'Heavy rain and high wind increase exposure on shorter routes; the alternate route is favoured.', r: { A: ['LOW', 'MEDIUM'], B: ['MEDIUM', 'HIGH'], C: ['LOW', 'LOW'] } },
+  'High Threat': { wx: 'Partly Cloudy', ic: '⛅', sub: 'No rain', t: 31, vis: 6, wind: 18, thr: 'HIGH', com: 'STABLE', wl: 'Moderate', hz: 64, rec: 'A', pen: 1.05, ai: '⚠️', ah: 'Caution required.', at: 'Recommended route avoids the high-risk zone and reduces environmental exposure.', r: { A: ['LOW', 'LOW'], B: ['HIGH', 'MEDIUM'], C: ['LOW', 'LOW'] } },
+  'Low Visibility': { wx: 'Dense Fog', ic: '🌫️', sub: 'Fog / mist', t: 24, vis: 2, wind: 8, thr: 'MODERATE', com: 'STABLE', wl: 'Poor', hz: 46, rec: 'C', pen: 1.2, ai: '🌫️', ah: 'Reduced visibility detected.', at: 'Alternate route favours clearer, better-marked terrain while visibility is reduced.', r: { A: ['LOW', 'MEDIUM'], B: ['HIGH', 'HIGH'], C: ['LOW', 'LOW'] } }
+};
+
+const MPC = { LOW: '#22c55e', MEDIUM: '#eab308', MODERATE: '#eab308', HIGH: '#f97316', CRITICAL: '#ef4444', STABLE: '#22c55e', DEGRADED: '#f97316', RECOMMENDED: '#1769b0' };
+const mpt = x => `<span class="tag" style="background:${MPC[x] || '#38bdf8'}">${x}</span>`;
+
+const mpInit = () => ({ mission: 'Operation Vayu', type: 'Reconnaissance', pri: 'High', area: 'Sector North', scn: 'Normal Conditions', contact: null, route: null, view: null, wps: 0, brief: false, reviewed: false, assessed: false, zoom: 1 });
+const WPN = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot'];
+const RK = { A: 18.4, B: 15.2, C: 21.8 };
+const RT = { A: 32, B: 27, C: 39 };
+const RP = { A: 98, B: 0, C: 165 };
+const MPB = [70, 355];
+
+S.mp = mpInit();
+
+function mpG(id) {
+  const c = MP_C.find(x => x.id == id), B = MPB, C = c.p, dx = C[0] - B[0], dy = C[1] - B[1], L = Math.hypot(dx, dy), n = [-dy / L, dx / L], M = [B[0] + dx / 2, B[1] + dy / 2], y = M[1] - 165 * n[1], side = y > 30 && y < 410 ? 1 : -1;
+  return { c, B, C, n, M, side, mz: [M[0] + side * 105 * n[0], Math.min(385, M[1] + side * 105 * n[1])] };
+}
+
+function mpPts(g, k, ex) {
+  const o = -g.side * RP[k], P = (t, f) => [g.B[0] + (g.C[0] - g.B[0]) * t + g.n[0] * o * f, g.B[1] + (g.C[1] - g.B[1]) * t + g.n[1] * o * f], a = [g.B, P(.33, 1), P(.67, 1)];
+  for (let i = 1; i <= ex; i++) a.push(P(.67 + .33 * i / (ex + 1), 1 - i / (ex + 1)));
+  a.push(g.C); return a;
+}
+
+const mpLen = p => p.slice(1).reduce((s, q, i) => s + Math.hypot(q[0] - p[i][0], q[1] - p[i][1]), 0);
+
+function mpRoutes() {
+  const m = S.mp; if (!m.contact) return null;
+  const g = mpG(m.contact), sc = MP_S[m.scn], f = g.c.d / 18, R = {};
+  ['A', 'B', 'C'].forEach(k => {
+    R[k] = { k, km: +(RK[k] * f).toFixed(1), t: Math.round(RT[k] * f * sc.pen), risk: sc.r[k][0], exp: sc.r[k][1], rec: sc.rec == k, name: 'Route ' + k + ' — ' + (sc.rec == k ? 'Recommended' : { A: 'Primary', B: 'Shortest', C: 'Alternate' }[k]), pts: mpPts(g, k, m.wps) };
+  });
+  return R;
+}
+
+function mpReasons(sc) {
+  const r = [];
+  if (sc.thr == 'HIGH') r.push('Recommended route avoids high-risk zone.');
+  if (sc.vis <= 3) r.push('Route adjusted due to reduced visibility.');
+  if (sc.wind >= 40) r.push('Alternate route recommended due to weather conditions.');
+  if (!r.length) r.push('No adverse factors detected: shortest low-risk route recommended.');
+  return r;
+}
+
+function mpMap() {
+  const m = S.mp, sc = MP_S[m.scn], g = mpG(m.contact || 'Alpha'), R = mpRoutes(), ak = m.view || m.route || (R && sc.rec), z = m.zoom;
+  const T_ = (x, y, t, c) => `<text x="${x}" y="${y}" style="fill:${c || '#102d4c'};font-size:11px;font-weight:600">${t}</text>`;
+  let s = `<svg id="mpmap" viewBox="${300 - 300 / z} ${220 - 220 / z} ${600 / z} ${440 / z}" class="ch" style="width:100%;max-height:500px;border-radius:8px;background:#f8fafc;border:1px solid #dce5ee"><defs><pattern id="mg" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#e2e9f0" stroke-width="1"/></pattern></defs><rect x="-200" y="-200" width="1000" height="840" fill="url(#mg)"/>
+  <path d="M-200 -200H800V40C600 80 450 30 300 70S80 50 -200 90Z" fill="#1769b0" opacity=".05"/><path d="M-200 640H800V420C650 380 520 430 380 400S120 430 -200 390Z" fill="#1769b0" opacity=".05"/>${T_(16, 28, m.area.toUpperCase() + ' · FICTIONAL DEMO GRID', '#718398')}`;
+
+  if (m.scn == 'Adverse Weather') s += `<ellipse cx="${g.M[0]}" cy="${g.M[1]}" rx="150" ry="85" fill="#38bdf8" opacity=".15"/>` + T_(g.M[0] - 40, g.M[1] + 110, '🌧 RAIN CELL', '#38bdf8');
+  if (m.scn == 'Low Visibility') s += `<rect x="-200" y="-200" width="1000" height="840" fill="#94a3b8" opacity=".15"/>` + T_(430, 415, '🌫 LOW VISIBILITY', '#718398');
+
+  s += `<circle cx="${g.mz[0]}" cy="${g.mz[1]}" r="42" fill="#f97316" opacity=".2" stroke="#f97316" stroke-dasharray="4 3"/>${T_(g.mz[0] - 38, g.mz[1] + 4, 'MODERATE RISK', '#f97316')}<circle class="pz" cx="${g.M[0]}" cy="${g.M[1]}" r="${sc.hz}" fill="#ef4444" opacity=".15" stroke="#ef4444" stroke-width="2" stroke-dasharray="5 3"/>${T_(g.M[0] - 34, g.M[1] + 4, 'HIGH-RISK', '#ef4444')}`;
+
+  if (R) {
+    ['A', 'B', 'C'].filter(k => k != ak).forEach(k => {
+      s += `<polyline points="${R[k].pts.join(' ')}" fill="none" stroke="#718398" stroke-width="2" stroke-dasharray="3 5" opacity=".6"/>${T_(R[k].pts[1][0] - 6, R[k].pts[1][1] - 8, k, '#718398')}`;
+    });
+    const a = R[ak];
+    s += `<polyline points="${a.pts.join(' ')}" fill="none" stroke="#1769b0" stroke-width="8" opacity=".15" stroke-linejoin="round"/><polyline class="fl" points="${a.pts.join(' ')}" fill="none" stroke="#1769b0" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
+    a.pts.slice(1, -1).forEach((p, i) => {
+      s += `<circle cx="${p[0]}" cy="${p[1]}" r="8" fill="#eab308" stroke="#fff" stroke-width="2"/><text x="${p[0]}" y="${p[1] + 3.5}" text-anchor="middle" style="fill:#fff;font-size:10px;font-weight:800">${i + 1}</text>${T_(p[0] + 11, p[1] - 8, 'WP ' + WPN[i], '#c78319')}`;
+    });
+  }
+  s += `<circle cx="${MPB[0]}" cy="${MPB[1]}" r="11" fill="#16854c" stroke="#fff" stroke-width="2.5"/>${T_(MPB[0] - 18, MPB[1] + 28, 'BASE / START', '#16854c')}`;
+  MP_C.forEach(c => {
+    const on = c.id == m.contact;
+    s += `<g data-act="mp_contact" data-id="${c.id}" style="cursor:pointer">${on ? `<circle cx="${c.p[0]}" cy="${c.p[1]}" r="19" fill="none" stroke="#1769b0" stroke-width="2" class="pz"/>` : ''}<circle cx="${c.p[0]}" cy="${c.p[1]}" r="${on ? 12 : 9}" fill="#1769b0" opacity="${!m.contact || on ? 1 : .55}" stroke="#fff" stroke-width="2.5"/>${T_(c.p[0] - 30, c.p[1] - 20, c.n.toUpperCase(), '#102d4c')}</g>`;
+  });
+
+  return `<div style="position:relative"><div class="mpz"><button class="bt o" data-act="mp_zoom" data-id="in" aria-label="Zoom in">＋</button><button class="bt o" data-act="mp_zoom" data-id="out" aria-label="Zoom out">−</button><button class="bt o" data-act="mp_zoom" data-id="reset" aria-label="Reset zoom">⟲</button></div>${s}</svg></div>
+  <div class="lg"><span><i style="background:#16854c"></i>Start / Base</span><span><i style="background:#1769b0"></i>Contact</span><span><i style="background:#eab308"></i>Waypoints</span><span><i style="background:#ef4444"></i>High-risk zone</span><span><i style="background:#f97316"></i>Moderate-risk zone</span><span><i style="background:#1769b0"></i>Active route</span></div>`;
+}
+
+function pMission() {
+  const m = S.mp, sc = MP_S[m.scn], nm = MP_S['Normal Conditions'], R = mpRoutes(), ct = MP_C.find(x => x.id == m.contact), sr = R && m.route ? R[m.route] : null, ak = m.view || m.route || (R && sc.rec), kvt = (l, v) => `<div class="p" style="padding:12px;background:#f8fafc;box-shadow:none;"><div class="mt" style="font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${l}</div><div style="font-size:12px;color:#102d4c;">${v}</div></div>`;
+  
+  const cc = [
+    ['Weather', sc.ic, sc.wx, sc.sub, sc.wx != nm.wx],
+    ['Temperature', '🌡️', sc.t + '°C', 'Feels like ' + (sc.t + 3) + '°C', sc.t != nm.t],
+    ['Visibility', '👁️', sc.vis + ' km', sc.vis <= 3 ? 'Poor' : sc.vis <= 6 ? 'Reduced' : 'Good', sc.vis != nm.vis],
+    ['Wind', '💨', sc.wind + ' km/h', sc.wind >= 40 ? 'High' : sc.wind >= 25 ? 'Moderate' : 'Light', sc.wind != nm.wind],
+    ['Threat Level', '🛡️', mpt(sc.thr), sc.thr == 'HIGH' ? 'Threat zone expanded' : 'Zone contained', sc.thr != nm.thr],
+    ['Communication', '📡', mpt(sc.com), sc.com == 'STABLE' ? 'Link nominal' : 'Link degraded', sc.com != nm.com]
+  ];
+
+  const st = [['Mission Created', '📝', 1], ['Conditions Assessed', '🌦️', m.assessed], ['Contact Selected', '📡', !!m.contact], ['Routes Generated', '🧭', !!m.contact], ['Route Selected', '✅', !!sr], ['Mission Ready for Review', '📋', m.brief]];
+  const cur = st.findIndex(x => !x[2]);
+  const hint = ['', 'Assess conditions or pick a scenario', 'Select a contact', '', 'Select a route', 'Generate the mission brief'][cur < 0 ? 9 : cur] || '';
+
+  const wl = [];
+  if (R) {
+    const p = R[ak].pts, sc2 = R[ak].km / mpLen(p);
+    p.forEach((q, i) => wl.push([i == 0 ? 'Base Point' : i == p.length - 1 ? ct.n : 'Waypoint ' + WPN[i - 1], i == 0 ? 'Ready' : i == p.length - 1 ? 'Objective' : i > 2 ? 'Added' : 'Planned', i ? (mpLen([p[i - 1], q]) * sc2).toFixed(1) + ' km' : '—']));
+  }
+  
+  const ps = S.mp.pri == 'Medium' ? 'Moderate' : S.mp.pri;
+  const rs = !sr ? 'AWAITING ROUTE' : m.reviewed ? 'REVIEWED' : m.brief ? 'READY FOR DISPATCH' : 'ROUTE SELECTED';
+
+  return `
+    <div class="page-heading">
+      <div><p class="eyebrow">TACTICAL PLANNING</p><h2>Mission Planning & Strategy</h2></div>
+      <div class="heading-actions"><span class="updated"><span class="green-dot"></span> Planning Module Active</span></div>
+    </div>
+
+    <div class="p">
+      <h3><span>🎯 Mission Parameters</span>${SIM}</h3>
+      <div class="mt" style="margin-bottom:10px">Configure mission objectives, priority, and environmental scenarios.</div>
+      <div class="mph">
+        <label>Mission Name${sel('mp.mission', ['Operation Vayu', 'Operation Shakti', 'Operation Garud'], m.mission)}</label>
+        <label>Mission Type${sel('mp.type', ['Reconnaissance', 'Surveillance', 'Search & Assessment'], m.type)}</label>
+        <label>Priority${sel('mp.pri', ['Low', 'Medium', 'High', 'Critical'], m.pri)}</label>
+        <label>Area of Operations${sel('mp.area', ['Sector North', 'Sector West', 'Sector Central', 'Sector East'], m.area)}</label>
+        <label>Scenario${sel('mp.scn', Object.keys(MP_S), m.scn)}</label>
+      </div>
+      ${hint ? `<div class="mt" style="margin-top:12px; font-size:11px; padding:8px; background:#f4f9fd; border-radius:4px; border-left:3px solid var(--blue);"><b style="color:var(--blue);">➜ NEXT STEP:</b> ${hint}</div>` : ''}
+    </div>
+
+    <div class="p ${m.scn != 'Normal Conditions' ? 'chg' : ''}">
+      <h3><span>Current Mission Conditions · ${m.scn}</span><span class="bar">${SIM}<button class="bt o" data-act="mp_assess">${m.assessed ? '✓ Assessed' : 'Assess Conditions'}</button></span></h3>
+      <div class="g k">
+        ${cc.map(c => `<div class="p ${c[4] ? 'chg' : ''}" style="box-shadow:none; background:#f8fafc; padding:12px;"><div class="mt" style="font-weight:700;">${c[1]} ${c[0]} ${c[4] ? '<b style="color:#f97316">▲ CHANGED</b>' : ''}</div><div class="kv" style="font-size:18px;">${c[2]}</div><div class="mt">${c[3]}</div></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="mpg">
+      <div class="p">
+        <h3><span>Mission Map · ${m.area}</span>${SIM}</h3>
+        ${mpMap()}
+        <div class="mt" style="margin-top:6px">Fictional demo sectors and coordinates. ${R ? 'Showing ' + R[ak].name + (m.view ? ' (preview)' : '') : 'Select a contact to generate routes.'}</div>
+      </div>
+
+      <div class="p">
+        <h3><span>Intelligence Contacts</span>${SIM}</h3>
+        ${MP_C.map(c => `<div class="rc ${c.id == m.contact ? 'on' : ''}" style="margin-bottom:10px"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><b>${c.n}</b> ${sevTag(c.r)}</div><div class="mt" style="margin-bottom:10px; line-height:1.6;">Status: <b style="color:var(--ink);">${c.st}</b><br>Distance: <b style="color:var(--ink); font-family:var(--mono);">${c.d} km</b></div><button class="bt ${c.id == m.contact ? 'o on' : ''}" style="width:100%; font-size:10px;" data-act="mp_contact" data-id="${c.id}">${c.id == m.contact ? '✓ Selected' : 'Select Target'}</button></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="p">
+      <h3><span>Route Planning ${ct ? '· ' + ct.n : ''}</span>${SIM}</h3>
+      ${R ? `<div class="g g2" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+        ${['A', 'B', 'C'].map(k => {
+          const r = R[k];
+          return `<div class="rc ${r.rec ? 'rec' : ''} ${m.route == k ? 'on' : ''}">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+              <b style="font-size:13px;">${r.name}</b> 
+              ${r.rec ? mpt('RECOMMENDED') : ''}
+            </div>
+            <div class="mt" style="margin:6px 0; line-height:2; font-size:11px;">
+              Distance: <b style="color:var(--ink); font-family:var(--mono);">${r.km} km</b><br>
+              Est. Time: <b style="color:var(--ink); font-family:var(--mono);">${r.t} min</b><br>
+              Risk Level: ${mpt(r.risk)}<br>
+              Weather Exposure: ${mpt(r.exp)}
+            </div>
+            <div class="bar" style="margin-top:12px;">
+              <button class="bt o ${m.view == k ? 'on' : ''}" style="flex:1; font-size:10px;" data-act="mp_view" data-id="${k}">View Map</button>
+              <button class="bt ${m.route == k ? 'o on' : ''}" style="flex:1; font-size:10px;" data-act="mp_route" data-id="${k}">${m.route == k ? '✓ Selected' : 'Select'}</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>` : '<div class="em mt" style="padding:20px; text-align:center;">Select a contact on the map or in the Intelligence panel to generate route options.</div>'}
+    </div>
+
+    <div class="g g2">
+      <div class="p ${m.scn != 'Normal Conditions' ? 'chg' : ''}">
+        <h3><span>GARUD Assessment</span>${SIM}</h3>
+        <div style="font-size:16px; font-weight:700; color:var(--ink); margin-bottom:8px;">${sc.ai} ${sc.ah}</div>
+        <p class="mt" style="font-size:12px; line-height:1.6;">${sc.at}</p>
+        <ul style="margin:10px 0; padding-left:20px; font-size:12px; color:var(--ink); line-height:1.8;">
+          ${mpReasons(sc).map(x => `<li>${x}</li>`).join('')}
+        </ul>
+        ${R ? `<div class="ban" style="border:1px solid var(--blue); background:#e0efff; color:#102d4c; padding:10px; border-radius:6px; font-size:11px;">Recommended: <b>${R[sc.rec].name}</b> · ${R[sc.rec].km} km · ${R[sc.rec].t} min · risk ${R[sc.rec].risk}</div>` : '<div class="mt">Select a contact to see the route recommendation.</div>'}
+      </div>
+
+      <div class="p">
+        <h3><span>Waypoint Navigation</span><span class="bar">${SIM}<button class="bt o" data-act="mp_wp" ${R && m.wps < 4 ? '' : 'disabled'}>＋ Add Waypoint</button></span></h3>
+        ${wl.length ? wl.map((w, i) => `<div class="row"><span class="tag" style="background:#eab308; color:#fff; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:50%; padding:0; font-size:10px;">${i + 1}</span><div style="flex:1"><b style="font-size:12px; color:var(--ink);">${w[0]}</b><div class="mt" style="font-size:10px;">Status: ${w[1]}</div></div><span class="mt" style="font-family:var(--mono); font-weight:700; color:var(--ink);">${w[2]}</span></div>`).join('') : '<div class="em mt" style="padding:20px; text-align:center;">Waypoints appear once a route is selected.</div>'}
+      </div>
+    </div>
+
+    <div class="p">
+      <h3><span>Mission Timeline</span>${SIM}</h3>
+      <div class="tl">
+        ${st.map((x, i) => `${i ? '<span class="mt" style="align-self:center;">➜</span>' : ''}<div class="ts ${x[2] ? 'd' : i == cur ? 'cur' : ''}"><div>${x[2] ? '✅' : x[1]}</div><b style="font-size:11px;">${x[0]}</b><div class="mt" style="font-size:9px; margin-top:4px;">${x[2] ? 'Done' : i == cur ? 'Current' : 'Pending'}</div></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="p">
+      <h3><span>Mission Brief & Dispatch</span>${SIM}</h3>
+      <div class="g k" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+        ${kvt('Mission Name', m.mission)}
+        ${kvt('Type', m.type)}
+        ${kvt('Priority', `<span class="tag" style="background:${SC[ps]}">${m.pri}</span>`)}
+        ${kvt('Target Contact', ct ? ct.n : '—')}
+        ${kvt('Selected Route', sr ? sr.name : '—')}
+        ${kvt('Distance', sr ? sr.km + ' km' : '—')}
+        ${kvt('Est. Duration', sr ? sr.t + ' min' : '—')}
+        ${kvt('Weather', sc.wl)}
+        ${kvt('Visibility', sc.vis + ' km')}
+        ${kvt('Threat Level', mpt(sc.thr))}
+        ${kvt('Communication', mpt(sc.com))}
+        ${kvt('Plan Status', `<span class="tag" style="background:${m.brief ? '#16854c' : '#1769b0'}">${rs}</span>`)}
+      </div>
+      <div class="bar" style="margin-top:15px; border-top:1px solid #edf1f5; padding-top:15px;">
+        <button class="bt" data-act="mp_brief" ${sr && !m.brief ? '' : 'disabled'}>Generate Mission Brief</button>
+        <button class="bt o" data-act="mp_review" ${m.brief ? '' : 'disabled'}>Review Mission</button>
+        <button class="bt o" style="margin-left:auto; border-color:var(--red); color:var(--red);" data-act="mp_reset">Reset Planning</button>
+      </div>
+    </div>
+    <div class="mt" style="text-align:center; padding:10px;">All mission data, contacts, routes and threat zones are fictional and simulated for demonstration only.</div>
+  `;
+}
+
+function mpModal() {
+  const m = S.mp, sc = MP_S[m.scn], R = mpRoutes(), r = R[m.route], ct = MP_C.find(x => x.id == m.contact);
+  return `<div class="md show" data-act="close"><div onclick="event.stopPropagation()">
+    <h2 style="margin:0 0 10px; font-size:16px; color:var(--ink);">📋 Mission Brief Review</h2>
+    <div class="bar" style="margin-bottom:15px;">${SIM}<span class="mt">${m.mission} · ${m.type} · ${m.area}</span></div>
+    <ul>
+      <li>Scenario: <b>${m.scn}</b> — ${sc.ah}</li>
+      <li>Target Contact: <b>${ct.n}</b> (${ct.r} risk)</li>
+      <li>Assigned Route: <b>${r.name}</b> · ${r.km} km · ${r.t} min</li>
+      <li>Route Risk: ${mpt(r.risk)} · Weather Exposure: ${mpt(r.exp)}</li>
+      <li>Waypoints Configured: <b>${r.pts.length - 2}</b></li>
+      <li>Threat Level: ${mpt(sc.thr)} · Comms: ${mpt(sc.com)}</li>
+    </ul>
+    <p class="mt" style="margin-top:15px; font-size:11px; border-top:1px solid #edf1f5; padding-top:10px;">By confirming, this mission will be locked and dispatched to the operations center. Demonstration only. No real operational data.</p>
+    <div class="bar" style="margin-top:15px;">
+      <button class="bt" data-act="mp_confirm" style="flex:1;">Confirm & Dispatch</button>
+      <button class="bt o" data-act="close" style="flex:1;">Cancel</button>
+    </div>
+  </div></div>`;
+}
+
+function mpAct(A, id) {
+  const m = S.mp, rst = () => Object.assign(m, { route: null, view: null, brief: false, reviewed: false });
+  if (A == 'mp_contact') { rst(); Object.assign(m, { contact: id, wps: 0, assessed: true }); log('Mission: selected Contact ' + id); }
+  else if (A == 'mp_view') { m.view = m.view == id ? null : id; setTimeout(() => { const e = document.getElementById('mpmap'); e && e.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 60); }
+  else if (A == 'mp_route') { m.route = id; m.view = null; m.brief = false; m.reviewed = false; log('Mission: selected Route ' + id); }
+  else if (A == 'mp_wp') { if (m.contact && m.wps < 4) m.wps++; }
+  else if (A == 'mp_brief') { if (m.route) { m.brief = true; log('Mission brief generated: ' + m.mission); } }
+  else if (A == 'mp_review') { if (m.brief) S.modal = 'MP'; }
+  else if (A == 'mp_confirm') { m.reviewed = true; S.modal = null; alert('✅ Mission Dispatched successfully to Operations Command.'); }
+  else if (A == 'mp_assess') { m.assessed = true; }
+  else if (A == 'mp_reset') { S.mp = mpInit(); }
+  else if (A == 'mp_zoom') { m.zoom = id == 'in' ? Math.min(2.5, m.zoom + .5) : id == 'out' ? Math.max(1, m.zoom - .5) : 1; }
+}
+
+function modal() { return S.modal == 'MP' && S.mp.route && S.mp.contact ? mpModal() : ''; }
+
+function render() {
+  $('#app').innerHTML = `${pMission()}${modal()}`;
+}
+
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]');
+  if (!a) return;
+  const A = a.dataset.act;
+  if (A == 'close') { S.modal = null; render(); }
+  else if (A.slice(0, 3) == 'mp_') { mpAct(A, a.dataset.id); render(); }
+});
+
+document.addEventListener('change', e => {
+  const f = e.target.dataset.f;
+  if (!f) return;
+  S.mp[f.split('.')[1]] = e.target.value;
+  if (f == 'mp.scn') Object.assign(S.mp, { route: null, view: null, brief: false, reviewed: false, assessed: true });
+  render();
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  setInterval(() => {
+    const now = new Date();
+    const zulu = now.toISOString().split('T')[1].split('.')[0];
+    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+    document.getElementById("currentDate").textContent = `${dateStr} · ${zulu} ZULU`;
+  }, 1000);
+});
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GARUD AI | Resource Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* --- Light Theme Variables --- */
+:root {
+  --navy: #061b2e; --navy2: #0a2b46; --blue: #1769b0; --ink: #102b46; 
+  --muted: #718398; --line: #dce5ed; --bg: #edf2f7; --green: #16854c; 
+  --amber: #c78319; --red: #d93838;
+  --mono: 'JetBrains Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--ink); font-size: 13px; }
+button, input, select { font: inherit; outline: none; }
+button { cursor: pointer; }
+a { text-decoration: none; }
+
+/* --- Topbar & Header --- */
+.topbar { height: 42px; background: #061b2e; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid #29465e; gap: 14px; position: sticky; top: 0; z-index: 2000; }
+.gov-brand, .top-actions, .profile, .brand-lockup, .brand-title, .brand-centre, .panel-title, .heading-actions { display: flex; align-items: center; }
+.gov-brand { gap: 11px; min-width: 0; }
+.flag { width: 32px; height: 21px; border-radius: 2px; overflow: hidden; display: flex; flex-direction: column; flex-shrink: 0; }
+.flag i { flex: 1; } .flag i:nth-child(1) { background: #ff9933; } .flag i:nth-child(2) { background: #fff; } .flag i:nth-child(3) { background: #138808; }
+.gov-brand strong, .gov-brand span { display: block; }
+.gov-brand strong { font-size: 11px; } .gov-brand span { font-size: 9px; color: #c1d0de; margin-top: 2px; }
+.top-actions { gap: 16px; }
+.demo-pill { border: 1px solid #34546d; border-radius: 18px; padding: 5px 9px; font-size: 8px; letter-spacing: .8px; white-space: nowrap; color: #e4edf5; }
+.demo-pill b { display: inline-block; width: 6px; height: 6px; background: #32c783; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite; }
+.top-date { font-size: 10px; color: #d0dbe5; white-space: nowrap; font-family: var(--mono); }
+.icon-button { position: relative; border: 0; background: transparent; color: #fff; font-size: 18px; }
+.icon-button em { position: absolute; right: -7px; top: -6px; background: #df3c45; border-radius: 10px; padding: 2px 5px; font-size: 8px; font-style: normal; }
+.profile { gap: 8px; border-left: 1px solid #29465e; padding-left: 14px; }
+.avatar { height: 28px; width: 28px; border-radius: 50%; display: grid; place-items: center; background: #244965; font-size: 9px; font-weight: 800; }
+.profile strong, .profile small { display: block; white-space: nowrap; }
+.profile strong { font-size: 9px; } .profile small { font-size: 8px; color: #b8c9d8; margin-top: 3px; }
+
+.brand-header { min-height: 70px; background: linear-gradient(105deg, #071d31 0%, #092740 58%, #071d31 100%); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #23445d; position: sticky; top: 42px; z-index: 1999; }
+.brand-centre { gap: 12px; }
+.garud-emblem { width: 44px; height: 38px; position: relative; display: grid; place-items: center; }
+.garud-emblem .wing { position: absolute; left: 0; top: 2px; width: 34px; height: 6px; background: #ff9933; transform: skewX(30deg); clip-path: polygon(0 0, 100% 0, 78% 100%, 20% 100%); }
+.garud-emblem .wing.w2 { top: 12px; background: #fff; width: 28px; left: 5px; }
+.garud-emblem .wing.w3 { top: 22px; background: #138808; width: 22px; left: 10px; }
+.brand-title h1 { font-size: 28px; font-weight: 800; letter-spacing: 1.6px; color: #fff; line-height: 1; }
+.brand-title .full-form { font-size: 9px; color: #f1f5f8; margin-top: 3px; }
+.motto { text-align: right; }
+.motto strong { font-size: 16px; color: #fff; }
+.motto .saffron { color: #ffb35e; }
+
+/* --- App Shell & Sidebar --- */
+.app-shell { display: flex; min-height: calc(100vh - 112px); }
+.sidebar { width: 214px; flex-shrink: 0; background: linear-gradient(180deg, #082844, #061b2e); color: #c7d5e3; padding: 15px 9px 12px; display: flex; flex-direction: column; position: sticky; top: 112px; height: calc(100vh - 112px); overflow-y: auto; }
+.sidebar-label { font-size: 9px; letter-spacing: 1.3px; color: #7f9bb3; padding: 3px 12px 12px; font-weight: 700; }
+.nav-item { width: 100%; border: 0; background: transparent; color: #c8d7e5; display: flex; align-items: center; gap: 12px; text-align: left; padding: 11px 12px; border-radius: 7px; margin-bottom: 4px; font-size: 11px; transition: .18s; text-decoration: none; font-weight: 700; }
+.nav-item:hover { background: #123c5e; color: #fff; }
+.nav-item.active { background: linear-gradient(90deg, #176fc2, #15518c); color: #fff; box-shadow: inset 3px 0 #65bdff; }
+.nav-icon { width: 20px; text-align: center; font-size: 16px; color: #a5bdd0; flex-shrink: 0; }
+.nav-item.active .nav-icon { color: #fff; }
+.sidebar-bottom { margin-top: auto; padding-top: 20px; }
+.side-status { display: flex; align-items: center; gap: 9px; border-top: 1px solid #28445a; padding: 15px 8px; }
+.pulse { width: 8px; height: 8px; background: #32c783; border-radius: 50%; box-shadow: 0 0 0 4px #164631; flex-shrink: 0; animation: pulse 2s infinite; }
+.side-status b { font-size: 9px; color: #e2edf6; display: block; }
+.side-status small { font-size: 8px; color: #91a9bf; margin-top: 4px; display: block; }
+
+/* --- Main Content --- */
+.main-content { flex: 1; min-width: 0; padding: 15px; display: flex; flex-direction: column; gap: 15px; background: #edf2f7; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; }
+.eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; color: var(--amber); margin-bottom: 4px; }
+.page-heading h2 { font-size: 20px; color: #102d4c; letter-spacing: 0.5px; }
+.heading-actions { display: flex; gap: 12px; align-items: center; }
+.secure-badge { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10px; color: var(--green); border: 1px solid var(--green); padding: 6px 12px; border-radius: 4px; background: #e5f7ed; font-weight: 700; }
+.btn-outline { background: #fff; border: 1px solid #cdd9e5; color: #254864; padding: 7px 12px; border-radius: 6px; font-size: 10px; font-weight: 700; transition: 0.2s; }
+.btn-outline:hover { background: #f3f8fc; border-color: var(--blue); color: var(--blue); }
+
+/* --- KPI Row --- */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi-card { background: #fff; border: 1px solid #dce5ee; border-radius: 8px; padding: 18px; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(0,0,0,0.02); position: relative; overflow: hidden; cursor: pointer; transition: 0.2s; }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(13,43,69,0.08); border-color: #b0cde8; }
+.kpi-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.kpi-card.blue::before { background: var(--blue); }
+.kpi-card.green::before { background: var(--green); }
+.kpi-card.amber::before { background: var(--amber); }
+.kpi-card.violet::before { background: #5656b4; }
+.kpi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.kpi-title { font-size: 10px; font-weight: 800; color: #51687e; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-icon { font-size: 20px; }
+.kpi-card.blue .kpi-icon { color: var(--blue); }
+.kpi-card.green .kpi-icon { color: var(--green); }
+.kpi-card.amber .kpi-icon { color: var(--amber); }
+.kpi-card.violet .kpi-icon { color: #5656b4; }
+.kpi-value { font-size: 28px; font-family: var(--mono); font-weight: 800; color: #102d4c; line-height: 1; }
+.kpi-value span { font-size: 13px; color: #718398; font-family: 'Inter', sans-serif; font-weight: 600; }
+.kpi-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; border-top: 1px solid #edf1f5; padding-top: 10px; font-size: 10px; color: #718398; font-weight: 600; }
+.trend-up { color: var(--green); font-family: var(--mono); }
+.trend-down { color: var(--red); font-family: var(--mono); }
+
+/* --- Operational Grid --- */
+.ops-layout { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.panel { background: #fff; border: 1px solid #dce5ee; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+.panel-header { padding: 12px 15px; border-bottom: 1px solid #e2e9f0; display: flex; justify-content: space-between; align-items: center; background: #fbfdff; border-radius: 8px 8px 0 0; }
+.panel-title { font-size: 12px; font-weight: 800; color: #163654; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
+.panel-title i { color: var(--blue); font-style: normal; font-size: 16px; }
+.panel-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+
+/* --- Visual Base Cards --- */
+.base-card { border: 1px solid #e2e9f0; border-radius: 6px; padding: 12px; margin-bottom: 10px; background: #fff; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+.base-card:hover { border-color: var(--blue); background: #f8fafc; }
+.base-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.base-card.ok::before { background: var(--green); }
+.base-card.warning::before { background: var(--amber); }
+.base-card:last-child { margin-bottom: 0; }
+.base-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.base-top h4 { font-size: 13px; color: #102d4c; font-family: var(--mono); }
+.base-status { font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 3px; letter-spacing: 0.5px; }
+.base-status.green { background: #e5f7ed; color: var(--green); border: 1px solid #bce3cd; }
+.base-status.amber { background: #fff3df; color: var(--amber); border: 1px solid #f0d5a8; }
+.base-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.b-stat { background: #f8fafc; padding: 8px; border-radius: 4px; border: 1px solid #e2e9f0; }
+.b-stat span { display: block; font-size: 9px; color: #718398; text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
+.b-stat strong { display: block; font-size: 11px; color: #102d4c; font-family: var(--mono); }
+
+/* --- Radar Readiness --- */
+.radar-container { width: 130px; height: 130px; border-radius: 50%; border: 1px solid #c3d9ea; position: relative; margin: 10px auto 15px; background: radial-gradient(circle, #f4f9fd 0%, #fff 70%); box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
+.radar-sweep { position: absolute; top: 50%; left: 50%; width: 130px; height: 130px; margin: -65px 0 0 -65px; border-radius: 50%; background: conic-gradient(from 0deg, transparent 70%, rgba(23, 105, 176, 0.2) 100%); animation: spin 3s linear infinite; }
+.radar-dot { position: absolute; width: 6px; height: 6px; background: var(--blue); border-radius: 50%; box-shadow: 0 0 8px var(--blue); }
+.radar-text { text-align: center; font-family: var(--mono); color: var(--blue); font-size: 22px; font-weight: 800; margin-bottom: 15px; }
+.progress-track { width: 100%; margin-top: 15px; }
+.progress-labels { display: flex; justify-content: space-between; font-size: 10px; color: #51687e; margin-bottom: 4px; font-weight: 600; }
+.progress-track-inner { height: 5px; background: #e5edf4; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+.progress-track-inner div { height: 100%; border-radius: 10px; }
+
+/* --- Maintenance List --- */
+.maint-item { padding: 12px; border-bottom: 1px solid #edf1f5; cursor: pointer; transition: 0.2s; }
+.maint-item:hover { background: #f8fafc; }
+.maint-item:last-child { border-bottom: none; }
+.maint-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.maint-header strong { font-size: 11px; color: #102d4c; }
+.maint-tag { font-size: 8px; font-weight: 800; padding: 3px 6px; border-radius: 3px; letter-spacing: 0.5px; }
+.maint-tag.critical { background: #ffe4e4; color: var(--red); border: 1px solid #f5baba; }
+.maint-tag.routine { background: #fff3df; color: var(--amber); border: 1px solid #f0d5a8; }
+.maint-desc { font-size: 10px; color: #718398; line-height: 1.4; }
+
+/* --- Master Asset Table --- */
+.table-wrap { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; text-align: left; }
+.data-table th { background: #f8fafc; font-size: 9px; color: #718398; text-transform: uppercase; padding: 12px 15px; border-bottom: 1px solid #dce5ee; font-weight: 800; letter-spacing: 0.5px; }
+.data-table td { padding: 12px 15px; border-bottom: 1px solid #edf1f5; font-size: 11px; color: #102d4c; font-weight: 500; cursor: pointer; transition: 0.2s; }
+.data-table tr:hover td { background: #f4f9fd; }
+.data-table td.mono { font-family: var(--mono); font-weight: 700; color: var(--blue); }
+.status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; }
+.sd-green { background: var(--green); box-shadow: 0 0 4px var(--green); }
+.sd-amber { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
+.sd-red { background: var(--red); box-shadow: 0 0 4px var(--red); }
+.btn-table { background: #fff; border: 1px solid #cdd9e5; padding: 5px 10px; border-radius: 4px; font-size: 9px; font-weight: 700; color: #51687e; transition: 0.2s; }
+.btn-table:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+/* --- Modals --- */
+.modal-overlay { position: fixed; inset: 0; background: rgba(6,27,46,0.6); backdrop-filter: blur(2px); z-index: 3000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.2s; }
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal-content { background: #fff; border-radius: 10px; width: 90%; max-width: 650px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.2); transform: translateY(20px); transition: 0.2s; border: 1px solid #dce5ee; }
+.modal-overlay.show .modal-content { transform: translateY(0); }
+.modal-header { padding: 15px 20px; border-bottom: 1px solid #dce5ee; display: flex; justify-content: space-between; align-items: center; background: #fbfdff; border-radius: 10px 10px 0 0; }
+.modal-header h3 { font-size: 16px; color: #102d4c; font-family: var(--mono); display: flex; align-items: center; gap: 8px; }
+.modal-close { font-size: 22px; color: #718398; cursor: pointer; transition: 0.2s; border: none; background: none; }
+.modal-close:hover { color: var(--red); }
+.modal-body { padding: 20px; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.modal-section-title { font-size: 11px; color: var(--blue); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #dce5ee; padding-bottom: 5px; letter-spacing: 0.5px; }
+.modal-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e9f0; font-size: 12px; }
+.modal-item span { color: #718398; font-weight: 500; }
+.modal-item strong { color: #102d4c; font-family: var(--mono); }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; border-top: 1px solid #dce5ee; padding-top: 15px; }
+.btn-action { flex: 1; padding: 10px; background: #f8fafc; border: 1px solid #cdd9e5; color: #102d4c; border-radius: 6px; font-weight: 700; font-size: 11px; transition: 0.2s; }
+.btn-action:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+.btn-danger { border-color: #f5baba; color: var(--red); background: #ffe4e4; }
+.btn-danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #b0cde8; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #8faec7; }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="gov-brand">
+    <div class="flag"><i></i><i></i><i></i></div>
+    <div><strong>Government of India</strong><span>Ministry of Defence · Prototype</span></div>
+  </div>
+  <div class="top-actions">
+    <span class="demo-pill"><b></b> SIMULATED DATA</span>
+    <span class="top-date" id="currentDate"></span>
+    <button class="icon-button" title="Notifications" onclick="openModal('Notification Log', '3 Priority alerts:<br><br>1. <span style=\'color:var(--red); font-weight:bold;\'>CRITICAL:</span> MiG-29 (E-09) grounded.<br>2. <span style=\'color:var(--amber); font-weight:bold;\'>WARNING:</span> AFS Jodhpur fuel below 70%.<br>3. <span style=\'color:var(--blue); font-weight:bold;\'>INFO:</span> 4 pilots pending medical clearance.')">♧<em>3</em></button>
+    <div class="profile">
+      <div class="avatar">OC</div>
+      <div><strong>Operations Command</strong><small>Demo Administrator</small></div>
+      <span>⌄</span>
+    </div>
+  </div>
+</div>
+
+<!-- Brand Header -->
+<header class="brand-header">
+  <div class="brand-centre">
+    <div class="garud-emblem"><i class="wing"></i><i class="wing w2"></i><i class="wing w3"></i></div>
+    <div class="brand-title"><h1>GARUD <span></span></h1><p class="full-form">Generalised AI for Resource Utilisation &amp; Decision Support</p></div>
+  </div>
+  <div class="motto"><strong>सुरक्षित आकाश</strong> <strong class="saffron">शक्तिशाली भारत</strong></div>
+</header>
+
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-label">WORKSPACE</div>
+    <a href="index.html" class="nav-item"><span class="nav-icon">▦</span>Dashboard</a>
+    <a href="live-operations.html" class="nav-item"><span class="nav-icon">✈</span>Live Air Operations</a>
+    <a href="mission-planning.html" class="nav-item"><span class="nav-icon">▤</span>Mission Planning</a>
+    <a href="resource-management.html" class="nav-item active"><span class="nav-icon">▣</span>Resource Management</a>
+    <a href="airspace-routes.html" class="nav-item"><span class="nav-icon">⌖</span>Airspace &amp; Routes</a>
+    <a href="aircraft-fleet.html" class="nav-item"><span class="nav-icon">✈</span>Aircraft &amp; Fleet</a>
+    <a href="weatherwatch-live.html" class="nav-item"><span class="nav-icon">☁</span>Weather &amp; Threats</a>
+    <a href="aioptimize.html" class="nav-item"><span class="nav-icon">✳</span>AI Optimisation</a>
+    <a href="reports-analytics.html" class="nav-item"><span class="nav-icon">▥</span>Reports &amp; Analytics</a>
+    <a href="alerts-notifications.html" class="nav-item"><span class="nav-icon">♧</span>Alerts &amp; Notifications</a>
+    <div class="sidebar-bottom">
+      <div class="side-status">
+        <span class="pulse"></span>
+        <div><b>Uplink Nominal</b><small>SatCom Link Active</small></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">LOGISTICS & ASSETS</p>
+        <h2>Resource Management Center</h2>
+      </div>
+      <div class="heading-actions">
+        <div class="secure-badge">🛡️ SECURE UPLINK</div>
+        <button class="btn-outline" onclick="openModal('System Report Generation', 'Generating encrypted CSV report for Ministry of Defence...<br><br><span style=\'color:var(--green); font-weight:bold;\'>STATUS: FILE READY</span><br>Download Link: <span style=\'color:var(--blue); text-decoration:underline; cursor:pointer;\'>mdo_res_log_2026.csv</span>')">📄 Export Data</button>
+      </div>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card blue" onclick="openModal('Airframe Allocation', '<div class=\'modal-section-title\'>Active Airframes</div><div class=\'modal-item\'><span>Fighter Jets (Su-30MKI, Rafale, Tejas)</span><strong>78</strong></div><div class=\'modal-item\'><span>Transport (C-17, C-130, Chinook)</span><strong>24</strong></div><div class=\'modal-item\'><span>Surveillance (Netra, P-8I)</span><strong>14</strong></div><div class=\'modal-item\'><span>Trainers (Hawk Mk132)</span><strong>8</strong></div><div class=\'modal-item\'><span>Reserve / Maintenance</span><strong style=\'color:var(--amber);\'>46</strong></div>')">
+        <div class="kpi-header"><span class="kpi-title">Total Airframes</span><span class="kpi-icon">✈</span></div>
+        <div class="kpi-value">124 <span>/ 170</span></div>
+        <div class="kpi-footer"><span>Combat Ready: 112</span><span class="trend-up">▲ 2.4%</span></div>
+      </div>
+      
+      <div class="kpi-card green" onclick="openModal('Flight Crew Status', '<div class=\'modal-section-title\'>Pilot Roster</div><div class=\'modal-item\'><span>Fighter Pilots</span><strong>120</strong></div><div class=\'modal-item\'><span>Transport Pilots</span><strong>80</strong></div><div class=\'modal-item\'><span>Helicopter Pilots</span><strong>68</strong></div><div class=\'modal-item\'><span>Weapon System Operators</span><strong>44</strong></div><div class=\'modal-item\'><span>On Medical Leave</span><strong style=\'color:var(--red);\'>12</strong></div>')">
+        <div class="kpi-header"><span class="kpi-title">Active Flight Crew</span><span class="kpi-icon">👤</span></div>
+        <div class="kpi-value">312 <span>ready</span></div>
+        <div class="kpi-footer"><span>Standby: 44</span><span class="trend-up">▲ 1.2%</span></div>
+      </div>
+
+      <div class="kpi-card amber" onclick="openModal('Fuel & Logistics', '<div class=\'modal-section-title\'>Aviation Fuel (AVTUR)</div><div class=\'modal-item\'><span>AFS Ambala Reserves</span><strong>95%</strong></div><div class=\'modal-item\'><span>AFS Jodhpur Reserves</span><strong style=\'color:var(--amber);\'>68%</strong></div><div class=\'modal-item\'><span>AFS Tezpur Reserves</span><strong>88%</strong></div><div class=\'modal-item\'><span>AFS Pune Reserves</span><strong>92%</strong></div><div class=\'modal-item\'><span>Total Strategic Reserve</span><strong>8.4 Million L</strong></div>')">
+        <div class="kpi-header"><span class="kpi-title">Fuel Readiness</span><span class="kpi-icon">⛽</span></div>
+        <div class="kpi-value">92<span>%</span></div>
+        <div class="kpi-footer"><span>Capacity: 8.4M L</span><span class="trend-down">▼ 1.1%</span></div>
+      </div>
+
+      <div class="kpi-card violet" onclick="openModal('Ordnance & Armament', '<div class=\'modal-section-title\'>Weapon Systems Inventory</div><div class=\'modal-item\'><span>Air-to-Air Missiles (Astra, MICA)</span><strong>420 units</strong></div><div class=\'modal-item\'><span>Air-to-Ground (BrahMos, Spice)</span><strong>180 units</strong></div><div class=\'modal-item\'><span>Precision Guided Bombs</span><strong>850 units</strong></div><div class=\'modal-item\'><span>Status</span><strong style=\'color:var(--green);\'>FULLY ARMED</strong></div>')">
+        <div class="kpi-header"><span class="kpi-title">Ordnance Stock</span><span class="kpi-icon">🛡️</span></div>
+        <div class="kpi-value">88<span>%</span></div>
+        <div class="kpi-footer"><span>All systems nominal</span><span class="trend-up">OPTIMAL</span></div>
+      </div>
+    </div>
+
+    <!-- Operational Layout -->
+    <div class="ops-layout">
+      
+      <!-- Left: Base Readiness -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title"><i>⌂</i> Airbase Readiness</div></div>
+        <div class="panel-body">
+          
+          <div class="base-card ok" onclick="openModal('AFS Ambala - Base Report', '<div class=\'modal-grid\'><div><div class=\'modal-section-title\'>Overview</div><div class=\'modal-item\'><span>Squadrons</span><strong>No. 3, No. 31</strong></div><div class=\'modal-item\'><span>Runway Status</span><strong style=\'color:var(--green);\'>OPERATIONAL</strong></div><div class=\'modal-item\'><span>Air Traffic</span><strong>NORMAL</strong></div></div><div><div class=\'modal-section-title\'>Logistics</div><div class=\'modal-item\'><span>Fuel Level</span><strong style=\'color:var(--green);\'>95%</strong></div><div class=\'modal-item\'><span>Ordnance</span><strong>100%</strong></div><div class=\'modal-item\'><span>Ground Support</span><strong>12 Teams</strong></div></div></div>')">
+            <div class="base-top"><h4>AFS AMBALA</h4><span class="base-status green">OPERATIONAL</span></div>
+            <div class="base-stats">
+              <div class="b-stat"><span>Assigned Assets</span><strong>32 Aircraft</strong></div>
+              <div class="b-stat"><span>Crew Ready</span><strong>48 Pilots</strong></div>
+            </div>
+          </div>
+
+          <div class="base-card warning" onclick="openModal('AFS Jodhpur - Base Report', '<div class=\'modal-grid\'><div><div class=\'modal-section-title\'>Overview</div><div class=\'modal-item\'><span>Squadrons</span><strong>No. 10, No. 17</strong></div><div class=\'modal-item\'><span>Runway Status</span><strong style=\'color:var(--green);\'>OPERATIONAL</strong></div><div class=\'modal-item\'><span>Air Traffic</span><strong>NORMAL</strong></div></div><div><div class=\'modal-section-title\'>Logistics</div><div class=\'modal-item\'><span>Fuel Level</span><strong style=\'color:var(--amber);\'>68% (LOW)</strong></div><div class=\'modal-item\'><span>Ordnance</span><strong>85%</strong></div><div class=\'modal-item\'><span>Ground Support</span><strong>8 Teams</strong></div></div></div>')">
+            <div class="base-top"><h4>AFS JODHPUR</h4><span class="base-status amber">CAUTION</span></div>
+            <div class="base-stats">
+              <div class="b-stat"><span>Assigned Assets</span><strong>28 Aircraft</strong></div>
+              <div class="b-stat"><span>Crew Ready</span><strong>36 Pilots</strong></div>
+            </div>
+          </div>
+
+          <div class="base-card ok" onclick="openModal('AFS Tezpur - Base Report', '<div class=\'modal-grid\'><div><div class=\'modal-section-title\'>Overview</div><div class=\'modal-item\'><span>Squadrons</span><strong>No. 2, No. 102</strong></div><div class=\'modal-item\'><span>Runway Status</span><strong style=\'color:var(--green);\'>OPERATIONAL</strong></div><div class=\'modal-item\'><span>Air Traffic</span><strong>NORMAL</strong></div></div><div><div class=\'modal-section-title\'>Logistics</div><div class=\'modal-item\'><span>Fuel Level</span><strong style=\'color:var(--green);\'>88%</strong></div><div class=\'modal-item\'><span>Ordnance</span><strong>90%</strong></div><div class=\'modal-item\'><span>Ground Support</span><strong>10 Teams</strong></div></div></div>')">
+            <div class="base-top"><h4>AFS TEZPUR</h4><span class="base-status green">OPERATIONAL</span></div>
+            <div class="base-stats">
+              <div class="b-stat"><span>Assigned Assets</span><strong>24 Aircraft</strong></div>
+              <div class="b-stat"><span>Crew Ready</span><strong>40 Pilots</strong></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Middle: Radar Readiness -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title"><i>🎯</i> Global Readiness Index</div></div>
+        <div class="panel-body" style="align-items:center; justify-content:center;">
+          <div class="radar-container">
+            <div class="radar-sweep"></div>
+            <div class="radar-dot" style="top: 30%; left: 40%;"></div>
+            <div class="radar-dot" style="top: 60%; left: 70%;"></div>
+            <div class="radar-dot" style="top: 80%; left: 30%;"></div>
+            <div class="radar-dot" style="top: 20%; left: 80%;"></div>
+          </div>
+          <div class="radar-text">94.2%</div>
+          <p style="font-size:10px; color:var(--muted); text-align:center; margin-top:5px; font-family:var(--mono); font-weight:700;">THREAT LEVEL: <span style="color:var(--amber);">ELEVATED</span></p>
+          
+          <div class="progress-track">
+            <div class="progress-labels"><span>Air Superiority</span><span style="color:var(--green); font-family:var(--mono);">98%</span></div>
+            <div class="progress-track-inner"><div style="width:98%; background:var(--green);"></div></div>
+            
+            <div class="progress-labels"><span>Logistics Support</span><span style="color:var(--blue); font-family:var(--mono);">85%</span></div>
+            <div class="progress-track-inner"><div style="width:85%; background:var(--blue);"></div></div>
+            
+            <div class="progress-labels"><span>Intel & Surveillance</span><span style="color:var(--amber); font-family:var(--mono);">72%</span></div>
+            <div class="progress-track-inner" style="margin-bottom:0;"><div style="width:72%; background:var(--amber);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Maintenance -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title"><i>🔧</i> Priority Maintenance</div></div>
+        <div class="panel-body" style="padding:0;">
+          
+          <div class="maint-item" onclick="openModal('Work Order: MiG-29 (E-09)', '<div class=\'modal-item\'><span>Aircraft</span><strong>MiG-29 UPG</strong></div><div class=\'modal-item\'><span>Tail Number</span><strong>E-09</strong></div><div class=\'modal-item\'><span>Issue</span><strong style=\'color:var(--red);\'>Compressor Stall</strong></div><div class=\'modal-item\'><span>Assigned Crew</span><strong>Tech Sqn 4</strong></div><div class=\'modal-item\'><span>Status</span><strong style=\'color:var(--red);\'>GROUNDED</strong></div><div class=\'modal-item\'><span>Est. Completion</span><strong>48 Hours</strong></div><br><button class=\'btn-action\' onclick=\'alert(\'Authorization Required: Level 5 Clearance.\')\'>AUTHORIZE EXPEDITED REPAIR</button>')">
+            <div class="maint-header">
+              <strong>MiG-29 UPG (E-09)</strong>
+              <span class="maint-tag critical">CRITICAL</span>
+            </div>
+            <p class="maint-desc">Engine overhaul required. Compressor stall detected. Aircraft grounded.</p>
+          </div>
+
+          <div class="maint-item" onclick="openModal('Work Order: Su-30MKI (A-04)', '<div class=\'modal-item\'><span>Aircraft</span><strong>Su-30MKI</strong></div><div class=\'modal-item\'><span>Tail Number</span><strong>A-04</strong></div><div class=\'modal-item\'><span>Issue</span><strong style=\'color:var(--amber);\'>Hydraulic Leak</strong></div><div class=\'modal-item\'><span>Assigned Crew</span><strong>Tech Sqn 1</strong></div><div class=\'modal-item\'><span>Status</span><strong style=\'color:var(--amber);\'>IN HANGAR</strong></div><div class=\'modal-item\'><span>Est. Completion</span><strong>6 Hours</strong></div>')">
+            <div class="maint-header">
+              <strong>Su-30MKI (A-04)</strong>
+              <span class="maint-tag routine">ROUTINE</span>
+            </div>
+            <p class="maint-desc">Hydraulic fluid top-up and landing gear inspection.</p>
+          </div>
+
+          <div class="maint-item" onclick="openModal('Work Order: AEW&C (C-03)', '<div class=\'modal-item\'><span>Aircraft</span><strong>AEW&C Netra</strong></div><div class=\'modal-item\'><span>Tail Number</span><strong>C-03</strong></div><div class=\'modal-item\'><span>Issue</span><strong style=\'color:var(--amber);\'>Radar Calibration</strong></div><div class=\'modal-item\'><span>Assigned Crew</span><strong>Tech Sqn 7</strong></div><div class=\'modal-item\'><span>Status</span><strong style=\'color:var(--blue);\'>SCHEDULED</strong></div><div class=\'modal-item\'><span>Est. Completion</span><strong>12 Hours</strong></div>')">
+            <div class="maint-header">
+              <strong>AEW&C Netra (C-03)</strong>
+              <span class="maint-tag routine">ROUTINE</span>
+            </div>
+            <p class="maint-desc">Radar array calibration scheduled post-mission.</p>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom: Fleet Table -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><i>▤</i> Master Asset Registry</div>
+        <input type="text" placeholder="Search Tail Number..." style="background:#f8fafc; border:1px solid #cdd9e5; padding:6px 12px; border-radius:4px; font-size:11px; color:#102d4c; width:200px;">
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tail No.</th>
+              <th>Aircraft Type</th>
+              <th>Squadron</th>
+              <th>Assigned Pilot</th>
+              <th>Clearance</th>
+              <th>Fuel</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr onclick="openModal('Asset Deep Dive: A-01', '<div style=\'display:flex; gap:20px; margin-bottom:20px;\'><img src=\'https://images.unsplash.com/photo-1559163658-2758e0e82c55?auto=format&fit=crop&w=300&q=80\' style=\'width:200px; height:120px; object-fit:cover; border-radius:6px; border:1px solid #dce5ee;\'><div><h3 style=\'color:#102d4c; font-size:16px;\'>Sukhoi Su-30MKI</h3><p style=\'color:#718398; font-size:12px; margin-top:5px;\'>Air Superiority Fighter</p><p style=\'color:var(--green); font-size:12px; margin-top:5px; font-family:var(--mono); font-weight:700;\'>STATUS: COMBAT READY</p></div></div><div class=\'modal-grid\'><div><div class=\'modal-section-title\'>Specifications</div><div class=\'modal-item\'><span>Max Speed</span><strong>2,120 km/h</strong></div><div class=\'modal-item\'><span>Service Ceiling</span><strong>56,800 ft</strong></div><div class=\'modal-item\'><span>Combat Range</span><strong>1,500 km</strong></div></div><div><div class=\'modal-section-title\'>Current Loadout</div><div class=\'modal-item\'><span>Fuel</span><strong>82%</strong></div><div class=\'modal-item\'><span>Missiles</span><strong>6x Astra</strong></div><div class=\'modal-item\'><span>Pilot</span><strong>Wg Cdr A. Singh</strong></div></div></div>')">
+              <td class="mono">A-01</td>
+              <td>Su-30MKI</td>
+              <td>No. 31 Sqn</td>
+              <td>Wg Cdr A. Singh</td>
+              <td><span style="font-family:var(--mono); color:var(--amber); font-weight:700;">TS/SCI</span></td>
+              <td class="mono">82%</td>
+              <td><span class="status-dot sd-green"></span>COMBAT READY</td>
+              <td><button class="btn-table">INSPECT</button></td>
+            </tr>
+            <tr onclick="openModal('Asset Deep Dive: F-06', '<div style=\'display:flex; gap:20px; margin-bottom:20px;\'><img src=\'https://images.unsplash.com/photo-1559163658-2758e0e82c55?auto=format&fit=crop&w=300&q=80\' style=\'width:200px; height:120px; object-fit:cover; border-radius:6px; border:1px solid #dce5ee;\'><div><h3 style=\'color:#102d4c; font-size:16px;\'>Dassault Rafale</h3><p style=\'color:#718398; font-size:12px; margin-top:5px;\'>Omnirole Fighter</p><p style=\'color:var(--green); font-size:12px; margin-top:5px; font-family:var(--mono); font-weight:700;\'>STATUS: COMBAT READY</p></div></div><div class=\'modal-grid\'><div><div class=\'modal-section-title\'>Specifications</div><div class=\'modal-item\'><span>Max Speed</span><strong>1,912 km/h</strong></div><div class=\'modal-item\'><span>Service Ceiling</span><strong>50,000 ft</strong></div><div class=\'modal-item\'><span>Combat Range</span><strong>1,800 km</strong></div></div><div><div class=\'modal-section-title\'>Current Loadout</div><div class=\'modal-item\'><span>Fuel</span><strong>71%</strong></div><div class=\'modal-item\'><span>Missiles</span><strong>4x MICA</strong></div><div class=\'modal-item\'><span>Pilot</span><strong>Gp Capt M. Pillai</strong></div></div></div>')">
+              <td class="mono">F-06</td>
+              <td>Rafale</td>
+              <td>No. 3 Sqn</td>
+              <td>Gp Capt M. Pillai</td>
+              <td><span style="font-family:var(--mono); color:var(--amber); font-weight:700;">TS/SCI</span></td>
+              <td class="mono">71%</td>
+              <td><span class="status-dot sd-green"></span>COMBAT READY</td>
+              <td><button class="btn-table">INSPECT</button></td>
+            </tr>
+            <tr onclick="openModal('Asset Deep Dive: B-02', '<div style=\'display:flex; gap:20px; margin-bottom:20px;\'><img src=\'//images.forbesindia.com/blog/wp-content/uploads//media/images/2025/Jun/img_245826_rafel1-afp-bg.jpg?im=FitAndFill,width=1200,height=1200' style=\'width:200px; height:120px; object-fit:cover; border-radius:6px; border:1px solid #dce5ee;\'><div><h3 style=\'color:#102d4c; font-size:16px;\'>C-130J Super Hercules</h3><p style=\'color:#718398; font-size:12px; margin-top:5px;\'>Tactical Transport</p><p style=\'color:var(--amber); font-size:12px; margin-top:5px; font-family:var(--mono); font-weight:700;\'>STATUS: IN TRANSIT</p></div></div><div class=\'modal-grid\'><div><div class=\'modal-section-title\'>Specifications</div><div class=\'modal-item\'><span>Max Speed</span><strong>670 km/h</strong></div><div class=\'modal-item\'><span>Service Ceiling</span><strong>28,000 ft</strong></div><div class=\'modal-item\'><span>Cargo Capacity</span><strong>18 Tons</strong></div></div><div><div class=\'modal-section-title\'>Current Mission</div><div class=\'modal-item\'><span>Destination</span><strong>Leh Airbase</strong></div><div class=\'modal-item\'><span>Cargo</span><strong>Medical Supplies</strong></div><div class=\'modal-item\'><span>Pilot</span><strong>Sqn Ldr R. Kumar</strong></div></div></div>')">
+              <td class="mono">B-02</td>
+              <td>C-130J</td>
+              <td>No. 44 Sqn</td>
+              <td>Sqn Ldr R. Kumar</td>
+              <td><span style="font-family:var(--mono); color:var(--blue); font-weight:700;">SECRET</span></td>
+              <td class="mono">64%</td>
+              <td><span class="status-dot sd-amber"></span>IN TRANSIT</td>
+              <td><button class="btn-table">INSPECT</button></td>
+            </tr>
+            <tr onclick="openModal('Asset Deep Dive: C-03', '<div style=\'display:flex; gap:20px; margin-bottom:20px;\'><img src=\'https://images.unsplash.com/photo-1521727857535-28d2047c3b2d?auto=format&fit=crop&w=300&q=80\' style=\'width:200px; height:120px; object-fit:cover; border-radius:6px; border:1px solid #dce5ee;\'><div><h3 style=\'color:#102d4c; font-size:16px;\'>Embraer Netra AEW&C</h3><p style=\'color:#718398; font-size:12px; margin-top:5px;\'>Airborne Early Warning</p><p style=\'color:var(--green); font-size:12px; margin-top:5px; font-family:var(--mono); font-weight:700;\'>STATUS: ON PATROL</p></div></div><div class=\'modal-grid\'><div><div class=\'modal-section-title\'>Specifications</div><div class=\'modal-item\'><span>Max Speed</span><strong>780 km/h</strong></div><div class=\'modal-item\'><span>Radar Range</span><strong>450 km</strong></div><div class=\'modal-item\'><span>Endurance</span><strong>9 Hours</strong></div></div><div><div class=\'modal-section-title\'>Current Mission</div><div class=\'modal-item\'><span>Sector</span><strong>Eastern Border</strong></div><div class=\'modal-item\'><span>Fuel</span><strong>78%</strong></div><div class=\'modal-item\'><span>Operator</span><strong>Wg Cdr S. Rao</strong></div></div></div>')">
+              <td class="mono">C-03</td>
+              <td>AEW&C Netra</td>
+              <td>No. 50 Sqn</td>
+              <td>Wg Cdr S. Rao</td>
+              <td><span style="font-family:var(--mono); color:var(--amber); font-weight:700;">TS/SCI</span></td>
+              <td class="mono">78%</td>
+              <td><span class="status-dot sd-green"></span>ON PATROL</td>
+              <td><button class="btn-table">INSPECT</button></td>
+            </tr>
+            <tr onclick="openModal('Asset Deep Dive: E-09', '<div style=\'display:flex; gap:20px; margin-bottom:20px;\'><img src=\'https://images.unsplash.com/photo-1559163658-2758e0e82c55?auto=format&fit=crop&w=300&q=80\' style=\'width:200px; height:120px; object-fit:cover; border-radius:6px; border:1px solid var(--red); filter:grayscale(100%);\'><div><h3 style=\'color:var(--red); font-size:16px;\'>MiG-29 UPG</h3><p style=\'color:#718398; font-size:12px; margin-top:5px;\'>Air Superiority Fighter</p><p style=\'color:var(--red); font-size:12px; margin-top:5px; font-family:var(--mono); font-weight:700;\'>STATUS: GROUNDED</p></div></div><div class=\'modal-grid\'><div><div class=\'modal-section-title\'>Maintenance Alert</div><div class=\'modal-item\'><span>Issue</span><strong style=\'color:var(--red);\'>Compressor Stall</strong></div><div class=\'modal-item\'><span>Severity</span><strong style=\'color:var(--red);\'>CRITICAL</strong></div><div class=\'modal-item\'><span>Assigned Team</span><strong>Tech Sqn 4</strong></div></div><div><div class=\'modal-section-title\'>Asset Info</div><div class=\'modal-item\'><span>Squadron</span><strong>No. 47 Sqn</strong></div><div class=\'modal-item\'><span>Pilot</span><strong>Flg Offr K. Sharma</strong></div><div class=\'modal-item\'><span>Fuel</span><strong>12%</strong></div></div></div><br><button class=\'btn-action btn-danger\' onclick=\'alert(\'Redirecting to Maintenance Command...\')\'>VIEW MAINTENANCE WORK ORDER</button>')">
+              <td class="mono" style="color:var(--red);">E-09</td>
+              <td>MiG-29 UPG</td>
+              <td>No. 47 Sqn</td>
+              <td>Flg Offr K. Sharma</td>
+              <td><span style="font-family:var(--mono); color:var(--blue); font-weight:700;">SECRET</span></td>
+              <td class="mono" style="color:var(--red);">12%</td>
+              <td><span class="status-dot sd-red"></span>GROUNDED</td>
+              <td><button class="btn-table" style="border-color:var(--red); color:var(--red);">INSPECT</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal Container -->
+<div class="modal-overlay" id="infoModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle">SYSTEM REPORT</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <!-- Dynamic Content Injected Here -->
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Live Clock
+  setInterval(() => {
+    const now = new Date();
+    const zulu = now.toISOString().split('T')[1].split('.')[0];
+    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+    document.getElementById("currentDate").textContent = `${dateStr} · ${zulu} ZULU`;
+  }, 1000);
+});
+
+// Modal System
+function openModal(title, content) {
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("modalBody").innerHTML = content;
+  document.getElementById("infoModal").classList.add("show");
+}
+
+function closeModal() {
+  document.getElementById("infoModal").classList.remove("show");
+}
+
+// Close modal on outside click
+document.getElementById("infoModal").addEventListener("click", (e) => {
+  if (e.target.id === "infoModal") {
+    closeModal();
+  }
+});
+</script>
+</body>
+</html>

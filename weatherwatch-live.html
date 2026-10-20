@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GARUD AI | Weather & Threat Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* --- Core Theme Variables --- */
+:root {
+  --navy: #061b2e; --navy2: #0a2b46; --blue: #1769b0; --ink: #102b46; 
+  --muted: #718398; --line: #dce5ee; --bg: #edf2f7; --green: #16854c; 
+  --amber: #c78319; --red: #d93838;
+  --mono: 'JetBrains Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--ink); font-size: 13px; }
+button, select, input { font: inherit; outline: none; }
+button { cursor: pointer; }
+a { text-decoration: none; }
+
+/* --- Topbar & Header --- */
+.topbar { height: 42px; background: #061b2e; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid #29465e; gap: 14px; position: sticky; top: 0; z-index: 2000; }
+.gov-brand, .top-actions, .profile, .brand-centre { display: flex; align-items: center; }
+.gov-brand { gap: 11px; }
+.flag { width: 32px; height: 21px; border-radius: 2px; overflow: hidden; display: flex; flex-direction: column; }
+.flag i { flex: 1; } .flag i:nth-child(1) { background: #ff9933; } .flag i:nth-child(2) { background: #fff; } .flag i:nth-child(3) { background: #138808; }
+.gov-brand strong { font-size: 11px; display: block; } .gov-brand span { font-size: 9px; color: #c1d0de; display: block; }
+.top-actions { gap: 16px; }
+.demo-pill { border: 1px solid #34546d; border-radius: 18px; padding: 5px 9px; font-size: 8px; letter-spacing: .8px; white-space: nowrap; color: #e4edf5; }
+.demo-pill b { display: inline-block; width: 6px; height: 6px; background: #32c783; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite; }
+.top-date { font-size: 10px; color: #d0dbe5; white-space: nowrap; font-family: var(--mono); }
+.icon-button { position: relative; border: 0; background: transparent; color: #fff; font-size: 18px; }
+.icon-button em { position: absolute; right: -7px; top: -6px; background: #df3c45; border-radius: 10px; padding: 2px 5px; font-size: 8px; font-style: normal; }
+.profile { gap: 8px; border-left: 1px solid #29465e; padding-left: 14px; }
+.avatar { height: 28px; width: 28px; border-radius: 50%; display: grid; place-items: center; background: #244965; font-size: 9px; font-weight: 800; }
+.profile strong { font-size: 9px; display: block; } .profile small { font-size: 8px; color: #b8c9d8; display: block; margin-top: 3px; }
+
+.brand-header { min-height: 70px; background: linear-gradient(105deg, #071d31 0%, #092740 58%, #071d31 100%); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #23445d; position: sticky; top: 42px; z-index: 1999; }
+.brand-centre { gap: 12px; }
+.garud-emblem { width: 44px; height: 38px; position: relative; display: grid; place-items: center; }
+.garud-emblem .wing { position: absolute; left: 0; top: 2px; width: 34px; height: 6px; background: #ff9933; transform: skewX(30deg); clip-path: polygon(0 0, 100% 0, 78% 100%, 20% 100%); }
+.garud-emblem .wing.w2 { top: 12px; background: #fff; width: 28px; left: 5px; }
+.garud-emblem .wing.w3 { top: 22px; background: #138808; width: 22px; left: 10px; }
+.brand-title h1 { font-size: 28px; font-weight: 800; letter-spacing: 1.6px; color: #fff; line-height: 1; }
+.brand-title .full-form { font-size: 9px; color: #f1f5f8; margin-top: 3px; }
+.motto { text-align: right; }
+.motto strong { font-size: 16px; color: #fff; }
+.motto .saffron { color: #ffb35e; }
+
+/* --- App Shell & Sidebar --- */
+.app-shell { display: flex; min-height: calc(100vh - 112px); }
+.sidebar { width: 214px; flex-shrink: 0; background: linear-gradient(180deg, #082844, #061b2e); color: #c7d5e3; padding: 15px 9px 12px; display: flex; flex-direction: column; position: sticky; top: 112px; height: calc(100vh - 112px); overflow-y: auto; }
+.sidebar-label { font-size: 9px; letter-spacing: 1.3px; color: #7f9bb3; padding: 3px 12px 12px; font-weight: 700; }
+.nav-item { width: 100%; border: 0; background: transparent; color: #c8d7e5; display: flex; align-items: center; gap: 12px; text-align: left; padding: 11px 12px; border-radius: 7px; margin-bottom: 4px; font-size: 11px; transition: .18s; text-decoration: none; font-weight: 700; }
+.nav-item:hover { background: #123c5e; color: #fff; }
+.nav-item.active { background: linear-gradient(90deg, #176fc2, #15518c); color: #fff; box-shadow: inset 3px 0 #65bdff; }
+.nav-icon { width: 20px; text-align: center; font-size: 16px; color: #a5bdd0; flex-shrink: 0; }
+.nav-item.active .nav-icon { color: #fff; }
+.sidebar-bottom { margin-top: auto; padding-top: 20px; }
+.side-status { display: flex; align-items: center; gap: 9px; border-top: 1px solid #28445a; padding: 15px 8px; }
+.pulse { width: 8px; height: 8px; background: #32c783; border-radius: 50%; box-shadow: 0 0 0 4px #164631; flex-shrink: 0; animation: pulse 2s infinite; }
+.side-status b { font-size: 9px; color: #e2edf6; display: block; }
+.side-status small { font-size: 8px; color: #91a9bf; margin-top: 4px; display: block; }
+
+/* --- Main Content --- */
+.main-content { flex: 1; min-width: 0; padding: 15px; display: flex; flex-direction: column; gap: 15px; background: #edf2f7; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; }
+.eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; color: var(--blue); margin-bottom: 4px; }
+.page-heading h2 { font-size: 20px; color: #102d4c; }
+.heading-actions { display: flex; gap: 12px; align-items: center; }
+.updated { font-size: 10px; color: #61778b; font-weight: 600; }
+.green-dot { display: inline-block; width: 7px; height: 7px; background: #1aa35e; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite; }
+
+/* --- Dashboard Grid --- */
+.dashboard-grid { display: grid; grid-template-columns: minmax(0, 2.8fr) minmax(320px, 1fr); gap: 15px; flex: 1; min-height: 0; height: 55vh; }
+.panel { background: #fff; border: 1px solid #dce5ee; border-radius: 9px; overflow: hidden; box-shadow: 0 2px 10px rgba(13,43,69,0.04); display: flex; flex-direction: column; }
+.panel-header { min-height: 42px; background: #fff; border-bottom: 1px solid #e2e9f0; display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; gap: 10px; flex-shrink: 0; }
+.panel-title { gap: 9px; display: flex; align-items: center; }
+.title-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: #e9f2fb; color: #155c96; font-size: 14px; }
+.panel-title h3 { font-size: 13px; font-weight: 800; color: #163654; }
+.live-badge { font-size: 8px; color: #16844d; background: #e7f7ee; border-radius: 20px; padding: 5px 8px; font-weight: 800; letter-spacing: 0.5px; }
+
+/* --- Map Area --- */
+.map-wrap { flex: 1; position: relative; background: #d8e4ec; min-height: 400px; }
+#weather-ops-map { height: 100%; width: 100%; z-index: 1; background: #e5e7eb; }
+.leaflet-tile-pane { filter: grayscale(20%) contrast(110%) brightness(95%); }
+
+.map-legend { position: absolute; z-index: 500; left: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.95); border: 1px solid #d7e1ea; border-radius: 7px; padding: 10px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+.map-legend div { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #314f69; font-weight: 600; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.heat-high { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+.heat-med { background: #f97316; box-shadow: 0 0 8px #f97316; }
+.heat-low { background: #eab308; box-shadow: 0 0 8px #eab308; }
+.heat-cool { background: #2ca25f; box-shadow: 0 0 8px #2ca25f; }
+
+.afs-marker { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 30px; height: 30px; background: #061b2e; border: 2px solid #ffb35e; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); color: #fff; font-weight: 800; font-size: 12px; transition: transform 0.2s; }
+.afs-marker:hover { transform: scale(1.15); }
+.afs-marker::after { content: ''; position: absolute; bottom: -6px; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid #ffb35e; }
+
+/* Wind Animation */
+.wind-line { stroke-dasharray: 4 8; animation: wind-flow 2s linear infinite; }
+@keyframes wind-flow { to { stroke-dashoffset: -24; } }
+
+/* --- Tactical Weather Panel --- */
+.tactical-panel { background: #fff; }
+.weather-hero { padding: 20px 15px; background: linear-gradient(135deg, #0a2b46, #061b2e); color: #fff; border-bottom: 1px solid #1c4062; position: relative; overflow: hidden; }
+.weather-hero::after { content: ''; position: absolute; top: -50%; right: -20%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(23,105,176,0.4) 0%, transparent 70%); border-radius: 50%; }
+.weather-place { font-size: 11px; font-weight: 800; color: #65bdff; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; display: flex; justify-content: space-between; }
+.weather-time { font-size: 9px; color: #8faec7; font-family: var(--mono); }
+.weather-current { display: flex; align-items: center; gap: 15px; margin-top: 15px; position: relative; z-index: 2; }
+.weather-icon-big { font-size: 42px; }
+.weather-temp { display: flex; flex-direction: column; }
+.weather-temp strong { font-size: 36px; line-height: 1; font-family: var(--mono); font-weight: 800; }
+.weather-temp span { font-size: 12px; color: #b8c9d8; margin-top: 5px; font-weight: 600; }
+.weather-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
+.w-metric { background: #f8fafc; border: 1px solid #e2e9f0; border-radius: 6px; padding: 10px; }
+.w-metric span { display: block; font-size: 9px; color: #718398; text-transform: uppercase; margin-bottom: 4px; font-weight: 700; }
+.w-metric strong { display: block; font-size: 14px; color: #102d4c; font-family: var(--mono); }
+
+/* --- Bottom Grid (Forecasts & Charts) --- */
+.bottom-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 15px; }
+.b-panel { background: #fff; border: 1px solid #dce5ee; border-radius: 9px; padding: 15px; box-shadow: 0 2px 10px rgba(13,43,69,0.04); display: flex; flex-direction: column; }
+.b-title { font-size: 12px; font-weight: 800; color: #163654; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #edf1f5; padding-bottom: 10px; }
+
+/* 7-Day Forecast */
+.forecast-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #e2e9f0; }
+.forecast-row:last-child { border-bottom: none; }
+.fc-day { font-weight: 700; font-size: 12px; color: #102d4c; width: 60px; }
+.fc-icon { font-size: 18px; width: 30px; text-align: center; }
+.fc-desc { font-size: 11px; color: #718398; flex: 1; }
+.fc-temps { font-family: var(--mono); font-size: 12px; font-weight: 700; color: #102d4c; }
+.fc-temps span { color: #718398; font-weight: 500; margin-left: 5px; }
+
+/* 24H Chart */
+.chart-container { flex: 1; display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; padding-top: 20px; border-bottom: 1px solid #dce5ee; position: relative; height: 160px; }
+.chart-bar-group { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; }
+.chart-bar { width: 100%; max-width: 14px; background: linear-gradient(to top, #1769b0, #65bdff); border-radius: 3px 3px 0 0; transition: height 0.3s; position: relative; }
+.chart-bar:hover { background: #0a2b46; }
+.chart-bar-tooltip { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); background: #061b2e; color: #fff; font-size: 9px; padding: 3px 6px; border-radius: 4px; opacity: 0; pointer-events: none; transition: 0.2s; white-space: nowrap; font-family: var(--mono); z-index: 10; }
+.chart-bar:hover .chart-bar-tooltip { opacity: 1; }
+.chart-x-axis { display: flex; justify-content: space-between; margin-top: 8px; font-size: 9px; color: #718398; font-family: var(--mono); }
+
+/* Operational Impact */
+.impact-list { display: flex; flex-direction: column; gap: 10px; }
+.impact-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 6px; border: 1px solid #e2e9f0; }
+.impact-icon { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; flex-shrink: 0; }
+.impact-text { flex: 1; }
+.impact-text b { display: block; font-size: 11px; color: #102d4c; }
+.impact-text span { font-size: 10px; color: #718398; }
+.impact-status { font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
+
+/* Loading / Error states */
+.wx-loading { display: flex; align-items: center; justify-content: center; padding: 20px; color: #718398; font-size: 12px; }
+.wx-loading::before { content: ''; width: 16px; height: 16px; border: 2px solid #dce5ee; border-top-color: var(--blue); border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; }
+.wx-error { color: var(--red); font-size: 11px; padding: 10px; background: #ffe4e4; border-radius: 6px; border: 1px solid #f5baba; }
+
+/* Leaflet Popup Overrides */
+.leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid #dce5ee; }
+.leaflet-popup-content { margin: 12px 15px; font-family: 'Inter', sans-serif; }
+.popup-title { font-weight: 800; color: #102d4c; font-size: 13px; margin-bottom: 5px; border-bottom: 1px solid #edf1f5; padding-bottom: 5px; }
+.popup-line { font-size: 11px; color: #51687e; margin-top: 4px; display: flex; justify-content: space-between; }
+.popup-line b { color: #102d4c; font-family: var(--mono); }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #b0cde8; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #8faec7; }
+
+@media(max-width: 1200px) { .bottom-grid { grid-template-columns: 1fr 1fr; } .bottom-grid > div:last-child { grid-column: span 2; } }
+@media(max-width: 800px) { .dashboard-grid { grid-template-columns: 1fr; height: auto; } .bottom-grid { grid-template-columns: 1fr; } .bottom-grid > div:last-child { grid-column: auto; } }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="gov-brand">
+    <div class="flag"><i></i><i></i><i></i></div>
+    <div><strong>Government of India</strong><span>Ministry of Defence · Prototype</span></div>
+  </div>
+  <div class="top-actions">
+    <span class="demo-pill"><b></b> LIVE TELEMETRY</span>
+    <span class="top-date" id="currentDate"></span>
+    <button class="icon-button" title="Notifications">♧<em>3</em></button>
+    <div class="profile">
+      <div class="avatar">OC</div>
+      <div><strong>Operations Command</strong><small>Demo Administrator</small></div>
+    </div>
+  </div>
+</div>
+
+<!-- Brand Header -->
+<header class="brand-header">
+  <div class="brand-centre">
+    <div class="garud-emblem"><i class="wing"></i><i class="wing w2"></i><i class="wing w3"></i></div>
+    <div class="brand-title"><h1>GARUD <span></span></h1><p class="full-form">Generalised AI for Resource Utilisation &amp; Decision Support</p></div>
+  </div>
+  <div class="motto"><strong>सुरक्षित आकाश</strong> <strong class="saffron">शक्तिशाली भारत</strong></div>
+</header>
+
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-label">WORKSPACE</div>
+    <a href="index.html" class="nav-item"><span class="nav-icon">▦</span>Dashboard</a>
+    <a href="live-operations.html" class="nav-item"><span class="nav-icon">✈</span>Live Air Operations</a>
+    <a href="mission-planning.html" class="nav-item"><span class="nav-icon">▤</span>Mission Planning</a>
+    <a href="resource-management.html" class="nav-item"><span class="nav-icon">▣</span>Resource Management</a>
+    <a href="airspace-routes.html" class="nav-item"><span class="nav-icon">⌖</span>Airspace &amp; Routes</a>
+    <a href="aircraft-fleet.html" class="nav-item"><span class="nav-icon">✈</span>Aircraft &amp; Fleet</a>
+    <a href="weatherwatch-live.html" class="nav-item active"><span class="nav-icon">☁</span>Weather &amp; Threats</a>
+    <a href="aioptimize.html" class="nav-item"><span class="nav-icon">✳</span>AI Optimisation</a>
+    <a href="reports-analytics.html" class="nav-item"><span class="nav-icon">▥</span>Reports &amp; Analytics</a>
+    <a href="alerts-notifications.html" class="nav-item"><span class="nav-icon">♧</span>Alerts &amp; Notifications</a>
+    <div class="sidebar-bottom">
+      <div class="side-status">
+        <span class="pulse"></span>
+        <div><b>Uplink Nominal</b><small>SatCom Link Active</small></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-heading">
+      <div><p class="eyebrow">METEOROLOGICAL COMMAND</p><h2>Weather & Threat Operations</h2></div>
+      <div class="heading-actions">
+        <span class="updated"><span class="green-dot"></span> Live Global Feed</span>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Map Section -->
+      <article class="panel map-panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="title-icon">☁</span><h3>Indian Subcontinent - Thermal & Wind Vector Map</h3><span class="live-badge"><i></i> LIVE SYNC</span></div>
+          <div style="font-size:10px; color:#718398; font-weight:600;">Click anywhere for coordinates</div>
+        </div>
+        <div class="map-wrap">
+          <div id="weather-ops-map"></div>
+          <div class="map-legend">
+            <div><i class="legend-dot heat-high"></i>Extreme Heat (> 38°C)</div>
+            <div><i class="legend-dot heat-med"></i>Hot (32°C - 38°C)</div>
+            <div><i class="legend-dot heat-low"></i>Warm (26°C - 32°C)</div>
+            <div><i class="legend-dot heat-cool"></i>Cool (< 26°C)</div>
+            <div style="margin-top:5px; border-top:1px solid #dce5ee; padding-top:5px;"><i class="legend-dot" style="background:#061b2e; border:2px solid #ffb35e;"></i>AFS Headquarters</div>
+            <div><svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#1769b0" stroke-width="2" stroke-dasharray="4 2"/></svg> Surface Wind Flow</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Right Side Weather Detail Panel -->
+      <div class="right-stack">
+        <article class="panel tactical-panel">
+          <div class="panel-header">
+            <div class="panel-title"><span class="title-icon">⌖</span><h3>Location Telemetry</h3></div>
+            <span class="status-tag green-tag" style="font-size:8px;">LIVE API</span>
+          </div>
+          
+          <div class="weather-hero" id="wx-hero">
+            <div class="weather-place">
+              <span id="wx-place-name">New Delhi, India</span>
+              <span class="weather-time" id="wx-time">Just now</span>
+            </div>
+            <div class="weather-current">
+              <div class="weather-icon-big" id="wx-icon">⛅</div>
+              <div class="weather-temp">
+                <strong id="wx-temp">32°</strong>
+                <span id="wx-condition">Partly Cloudy</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="wx-loading" class="wx-loading" style="display:none;">Fetching live satellite data...</div>
+          <div id="wx-error" class="wx-error" style="display:none; margin: 15px;">Failed to load live weather. Check connection.</div>
+
+          <div class="weather-metrics" id="wx-metrics">
+            <div class="w-metric"><span>Feels Like</span><strong id="wx-feels">35°C</strong></div>
+            <div class="w-metric"><span>Humidity</span><strong id="wx-humidity">45%</strong></div>
+            <div class="w-metric"><span>Wind Speed</span><strong id="wx-wind">12 km/h</strong></div>
+            <div class="w-metric"><span>Precipitation</span><strong id="wx-rain">0 mm</strong></div>
+            <div class="w-metric"><span>Wind Direction</span><strong id="wx-wind-dir">NW (320°)</strong></div>
+            <div class="w-metric"><span>Pressure</span><strong id="wx-pressure">1012 hPa</strong></div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- New Bottom Features Section -->
+    <div class="bottom-grid">
+      
+      <!-- 7-Day Forecast -->
+      <div class="b-panel">
+        <div class="b-title"><span style="font-size:16px;">📅</span> 7-Day Tactical Forecast</div>
+        <div id="forecast-7day">
+          <div class="wx-loading">Loading forecast data...</div>
+        </div>
+      </div>
+
+      <!-- 24-Hour Temperature Trend -->
+      <div class="b-panel">
+        <div class="b-title"><span style="font-size:16px;">📈</span> 24H Temperature Trend</div>
+        <div style="flex:1; display:flex; flex-direction:column;">
+          <div class="chart-container" id="chart-24h">
+            <!-- Bars injected by JS -->
+          </div>
+          <div class="chart-x-axis">
+            <span>Now</span>
+            <span>+6h</span>
+            <span>+12h</span>
+            <span>+18h</span>
+            <span>+24h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Operational Impact -->
+      <div class="b-panel">
+        <div class="b-title"><span style="font-size:16px;">⚠️</span> Operational Impact</div>
+        <div class="impact-list" id="impact-list">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// --- AFS HQ Locations ---
+const afsLocations = [
+  { name: "AFS Ambala", lat: 30.37, lon: 76.81 },
+  { name: "AFS Jodhpur", lat: 26.25, lon: 73.05 },
+  { name: "AFS Tezpur", lat: 26.63, lon: 92.79 },
+  { name: "AFS Pune", lat: 18.58, lon: 73.92 },
+  { name: "AFS Srinagar", lat: 33.98, lon: 74.77 },
+  { name: "AFS Guwahati (Borjhar)", lat: 26.10, lon: 91.58 },
+  { name: "AFS Gwalior", lat: 26.29, lon: 78.22 },
+  { name: "AFS Jaisalmer", lat: 26.88, lon: 70.86 }
+];
+
+// More detailed thermal zones
+const heatCities = [
+  { name: "Delhi", lat: 28.61, lon: 77.21, temp: 34 },
+  { name: "Mumbai", lat: 19.08, lon: 72.88, temp: 31 },
+  { name: "Chennai", lat: 13.08, lon: 80.27, temp: 35 },
+  { name: "Kolkata", lat: 22.57, lon: 88.36, temp: 33 },
+  { name: "Jaipur", lat: 26.91, lon: 75.79, temp: 41 },
+  { name: "Bengaluru", lat: 12.97, lon: 77.59, temp: 26 },
+  { name: "Bhopal", lat: 23.26, lon: 77.41, temp: 38 },
+  { name: "Ahmedabad", lat: 23.02, lon: 72.57, temp: 39 },
+  { name: "Leh", lat: 34.15, lon: 77.58, temp: 18 },
+  { name: "Patna", lat: 25.59, lon: 85.14, temp: 36 },
+  { name: "Hyderabad", lat: 17.38, lon: 78.48, temp: 37 },
+  { name: "Nagpur", lat: 21.14, lon: 79.08, temp: 40 },
+  { name: "Raipur", lat: 21.25, lon: 81.62, temp: 39 },
+  { name: "Shimla", lat: 31.10, lon: 77.17, temp: 22 }
+];
+
+let map = null;
+let heatLayer = null;
+let markerLayer = null;
+let windLayer = null;
+let clickMarker = null;
+let currentLat = 28.6139;
+let currentLon = 77.2090;
+let currentPlace = "New Delhi, India";
+
+function initMap() {
+  const el = document.getElementById("weather-ops-map");
+  if (!el) return;
+
+  map = L.map(el, { zoomControl: false, scrollWheelZoom: true }).setView([22.8, 79.2], 4.5);
+  
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18, attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+  
+  L.control.zoom({ position: "topright" }).addTo(map);
+
+  heatLayer = L.layerGroup().addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+  windLayer = L.layerGroup().addTo(map);
+
+  // 1. Add AFS Markers
+  afsLocations.forEach(afs => {
+    const icon = L.divIcon({
+      className: 'afs-marker-wrapper',
+      html: `<div class="afs-marker" title="${afs.name}">✈</div>`,
+      iconSize: [30, 36],
+      iconAnchor: [15, 36]
+    });
+    L.marker([afs.lat, afs.lon], { icon }).addTo(markerLayer)
+      .bindPopup(`<div class="popup-title">${afs.name}</div><div class="popup-line" style="color:#718398; font-size:10px;">Military Airbase</div>`);
+  });
+
+  // 2. Add Expanded Heat Overlays
+  heatCities.forEach(city => {
+    let color = city.temp >= 38 ? '#ef4444' : city.temp >= 32 ? '#f97316' : city.temp >= 26 ? '#eab308' : '#2ca25f';
+    L.circle([city.lat, city.lon], {
+      radius: 95000, 
+      color: color, 
+      weight: 0, 
+      fillColor: color, 
+      fillOpacity: 0.25,
+      interactive: false
+    }).addTo(heatLayer);
+  });
+
+  // 3. Add Wind Vectors (Animated Streams)
+  const windPaths = [
+    { coords: [[24, 68], [22, 72], [19, 74], [17, 78]], color: '#1769b0' },
+    { coords: [[12, 80], [15, 84], [18, 88], [22, 91]], color: '#65bdff' },
+    { coords: [[32, 74], [28, 78], [26, 82], [24, 86]], color: '#1769b0' },
+    { coords: [[35, 77], [30, 79], [26, 80], [22, 82]], color: '#65bdff' }
+  ];
+
+  windPaths.forEach(path => {
+    const polyline = L.polyline(path.coords, {
+      color: path.color,
+      weight: 3,
+      opacity: 0.8,
+      className: 'wind-line',
+      dashArray: '4 8',
+      interactive: false
+    }).addTo(windLayer);
+  });
+
+  // 4. Map Click Event
+  map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lon = e.latlng.lng;
+    
+    if (clickMarker) map.removeLayer(clickMarker);
+    clickMarker = L.circleMarker([lat, lon], {
+      radius: 8, color: '#1769b0', weight: 3, fillColor: '#fff', fillOpacity: 1
+    }).addTo(map);
+
+    fetchWeather(lat, lon, `Loc: ${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`);
+  });
+
+  // Initial fetch
+  setTimeout(() => fetchWeather(currentLat, currentLon, currentPlace), 500);
+}
+
+// Map WMO Weather Codes to Emoji/Text
+function getWeatherInfo(code) {
+  if (code === 0) return { icon: "☀️", text: "Clear Sky" };
+  if ([1, 2, 3].includes(code)) return { icon: "⛅", text: "Partly Cloudy" };
+  if ([45, 48].includes(code)) return { icon: "🌫️", text: "Fog / Haze" };
+  if ([51, 53, 55, 56, 57].includes(code)) return { icon: "🌦️", text: "Drizzle" };
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { icon: "🌧️", text: "Rain" };
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return { icon: "❄️", text: "Snow" };
+  if ([95, 96, 99].includes(code)) return { icon: "⛈️", text: "Thunderstorm" };
+  return { icon: "☁️", text: "Cloudy" };
+}
+
+async function fetchWeather(lat, lon, placeName = null) {
+  // UI Loading states
+  document.getElementById("wx-loading").style.display = "flex";
+  document.getElementById("wx-metrics").style.display = "none";
+  document.getElementById("wx-error").style.display = "none";
+  document.getElementById("forecast-7day").innerHTML = '<div class="wx-loading">Loading forecast data...</div>';
+  
+  if (placeName) document.getElementById("wx-place-name").textContent = placeName;
+  
+  try {
+    // Added daily and hourly endpoints
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&hourly=temperature_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&timezone=auto&forecast_days=7`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("API Error");
+    
+    const data = await response.json();
+    const cur = data.current;
+
+    // Update Top Telemetry Panel
+    const weatherInfo = getWeatherInfo(cur.weather_code);
+    document.getElementById("wx-icon").textContent = weatherInfo.icon;
+    document.getElementById("wx-temp").textContent = Math.round(cur.temperature_2m) + "°";
+    document.getElementById("wx-condition").textContent = weatherInfo.text;
+    document.getElementById("wx-feels").textContent = Math.round(cur.apparent_temperature) + "°C";
+    document.getElementById("wx-humidity").textContent = cur.relative_humidity_2m + "%";
+    document.getElementById("wx-wind").textContent = Math.round(cur.wind_speed_10m) + " km/h";
+    document.getElementById("wx-rain").textContent = cur.precipitation + " mm";
+    document.getElementById("wx-wind-dir").textContent = cur.wind_direction_10m + "°";
+    document.getElementById("wx-pressure").textContent = Math.round(cur.surface_pressure) + " hPa";
+    document.getElementById("wx-time").textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + " ZULU";
+
+    document.getElementById("wx-loading").style.display = "none";
+    document.getElementById("wx-metrics").style.display = "grid";
+
+    // Render Bottom Panels
+    render7DayForecast(data.daily);
+    render24HChart(data.hourly);
+    renderImpacts(cur);
+
+  } catch (error) {
+    document.getElementById("wx-loading").style.display = "none";
+    document.getElementById("wx-error").style.display = "block";
+    document.getElementById("forecast-7day").innerHTML = '<div class="wx-error">Failed to load forecast.</div>';
+  }
+}
+
+// Render 7-Day Forecast List
+function render7DayForecast(daily) {
+  const container = document.getElementById("forecast-7day");
+  container.innerHTML = "";
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(daily.time[i]);
+    const dayName = i === 0 ? "Today" : date.toLocaleDateString('en-GB', { weekday: 'short' });
+    const info = getWeatherInfo(daily.weather_code[i]);
+    const maxT = Math.round(daily.temperature_2m_max[i]);
+    const minT = Math.round(daily.temperature_2m_min[i]);
+    const rainProb = daily.precipitation_probability_max[i];
+
+    container.innerHTML += `
+      <div class="forecast-row">
+        <div class="fc-day">${dayName}</div>
+        <div class="fc-icon">${info.icon}</div>
+        <div class="fc-desc">${info.text} <span style="color:var(--blue); font-size:10px; margin-left:5px;">💧 ${rainProb}%</span></div>
+        <div class="fc-temps">${maxT}° <span>/ ${minT}°</span></div>
+      </div>
+    `;
+  }
+}
+
+// Render 24H Temperature Chart
+function render24HChart(hourly) {
+  const container = document.getElementById("chart-24h");
+  container.innerHTML = "";
+  
+  // Find current hour index
+  const now = new Date();
+  now.setMinutes(0, 0, 0);
+  const currentHourISO = now.toISOString().slice(0, 13);
+  let startIndex = hourly.time.findIndex(t => t.startsWith(currentHourISO));
+  if (startIndex === -1) startIndex = 0;
+
+  const temps = [];
+  for (let i = 0; i < 24; i++) {
+    if (startIndex + i < hourly.temperature_2m.length) {
+      temps.push(hourly.temperature_2m[startIndex + i]);
+    }
+  }
+
+  const maxTemp = Math.max(...temps);
+  const minTemp = Math.min(...temps);
+  const range = maxTemp - minTemp || 1;
+
+  temps.forEach((temp, i) => {
+    const heightPercent = 15 + ((temp - minTemp) / range) * 85; // Min height 15%
+    const timeLabel = hourly.time[startIndex + i].slice(11, 16);
+    
+    container.innerHTML += `
+      <div class="chart-bar-group">
+        <div class="chart-bar" style="height: ${heightPercent}%;">
+          <div class="chart-bar-tooltip">${Math.round(temp)}°C<br>${timeLabel}</div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// Render Operational Impacts
+function renderImpacts(cur) {
+  const container = document.getElementById("impact-list");
+  container.innerHTML = "";
+
+  const impacts = [];
+
+  // Heat Impact
+  if (cur.temperature_2m > 38) {
+    impacts.push({ icon: "🔥", title: "Extreme Heat Warning", desc: "Runway temp critical. High risk of tire degradation.", status: "CRITICAL", color: "#ef4444" });
+  } else if (cur.temperature_2m > 32) {
+    impacts.push({ icon: "☀️", title: "High Temperature", desc: "Monitor engine performance and crew fatigue.", status: "WARNING", color: "#f97316" });
+  }
+
+  // Wind Impact
+  if (cur.wind_speed_10m > 40) {
+    impacts.push({ icon: "💨", title: "High Wind Alert", desc: "Crosswind limits exceeded. Sorties grounded.", status: "CRITICAL", color: "#ef4444" });
+  } else if (cur.wind_speed_10m > 25) {
+    impacts.push({ icon: "🌬️", title: "Moderate Winds", desc: "Caution advised for light aircraft operations.", status: "WARNING", color: "#f97316" });
+  }
+
+  // Visibility / Rain Impact
+  if (cur.precipitation > 5) {
+    impacts.push({ icon: "🌧️", title: "Heavy Precipitation", desc: "Reduced braking action. Instrument approaches required.", status: "WARNING", color: "#f97316" });
+  }
+
+  if (impacts.length === 0) {
+    impacts.push({ icon: "✅", title: "Conditions Nominal", desc: "All meteorological parameters within safe operational limits.", status: "CLEAR", color: "#16854c" });
+  }
+
+  impacts.forEach(imp => {
+    container.innerHTML += `
+      <div class="impact-item" style="border-left: 3px solid ${imp.color};">
+        <div class="impact-icon" style="background: ${imp.color}20; color: ${imp.color};">${imp.icon}</div>
+        <div class="impact-text">
+          <b>${imp.title}</b>
+          <span>${imp.desc}</span>
+        </div>
+        <div class="impact-status" style="background: ${imp.color}20; color: ${imp.color};">${imp.status}</div>
+      </div>
+    `;
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setInterval(() => {
+    const now = new Date();
+    const zulu = now.toISOString().split('T')[1].split('.')[0];
+    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+    document.getElementById("currentDate").textContent = `${dateStr} · ${zulu} ZULU`;
+  }, 1000);
+
+  initMap();
+});
+</script>
+</body>
+</html>

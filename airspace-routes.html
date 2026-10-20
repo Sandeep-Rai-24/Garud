@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GARUD AI | Tactical Airspace & Routes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* --- Core Theme Variables --- */
+:root {
+  --navy: #061b2e; --navy2: #0a2b46; --blue: #1769b0; --ink: #102b46; 
+  --muted: #718398; --line: #dce5ee; --bg: #edf2f7; --green: #16854c; 
+  --amber: #c78319; --red: #d93838;
+  --mono: 'JetBrains Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--ink); font-size: 13px; }
+button, select, input { font: inherit; outline: none; }
+button { cursor: pointer; }
+a { text-decoration: none; }
+
+/* --- Topbar & Header --- */
+.topbar { height: 42px; background: #061b2e; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid #29465e; gap: 14px; position: sticky; top: 0; z-index: 2000; }
+.gov-brand, .top-actions, .profile, .brand-centre { display: flex; align-items: center; }
+.gov-brand { gap: 11px; }
+.flag { width: 32px; height: 21px; border-radius: 2px; overflow: hidden; display: flex; flex-direction: column; }
+.flag i { flex: 1; } .flag i:nth-child(1) { background: #ff9933; } .flag i:nth-child(2) { background: #fff; } .flag i:nth-child(3) { background: #138808; }
+.gov-brand strong { font-size: 11px; display: block; } .gov-brand span { font-size: 9px; color: #c1d0de; display: block; }
+.top-actions { gap: 16px; }
+.demo-pill { border: 1px solid #34546d; border-radius: 18px; padding: 5px 9px; font-size: 8px; letter-spacing: .8px; white-space: nowrap; color: #e4edf5; }
+.demo-pill b { display: inline-block; width: 6px; height: 6px; background: #32c783; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite; }
+.top-date { font-size: 10px; color: #d0dbe5; white-space: nowrap; font-family: var(--mono); }
+.icon-button { position: relative; border: 0; background: transparent; color: #fff; font-size: 18px; }
+.icon-button em { position: absolute; right: -7px; top: -6px; background: #df3c45; border-radius: 10px; padding: 2px 5px; font-size: 8px; font-style: normal; }
+.profile { gap: 8px; border-left: 1px solid #29465e; padding-left: 14px; }
+.avatar { height: 28px; width: 28px; border-radius: 50%; display: grid; place-items: center; background: #244965; font-size: 9px; font-weight: 800; }
+.profile strong { font-size: 9px; display: block; } .profile small { font-size: 8px; color: #b8c9d8; display: block; margin-top: 3px; }
+
+.brand-header { min-height: 70px; background: linear-gradient(105deg, #071d31 0%, #092740 58%, #071d31 100%); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #23445d; position: sticky; top: 42px; z-index: 1999; }
+.brand-centre { gap: 12px; }
+.garud-emblem { width: 44px; height: 38px; position: relative; display: grid; place-items: center; }
+.garud-emblem .wing { position: absolute; left: 0; top: 2px; width: 34px; height: 6px; background: #ff9933; transform: skewX(30deg); clip-path: polygon(0 0, 100% 0, 78% 100%, 20% 100%); }
+.garud-emblem .wing.w2 { top: 12px; background: #fff; width: 28px; left: 5px; }
+.garud-emblem .wing.w3 { top: 22px; background: #138808; width: 22px; left: 10px; }
+.brand-title h1 { font-size: 28px; font-weight: 800; letter-spacing: 1.6px; color: #fff; line-height: 1; }
+.brand-title .full-form { font-size: 9px; color: #f1f5f8; margin-top: 3px; }
+.motto { text-align: right; }
+.motto strong { font-size: 16px; color: #fff; }
+.motto .saffron { color: #ffb35e; }
+
+/* --- App Shell & Sidebar --- */
+.app-shell { display: flex; min-height: calc(100vh - 112px); }
+.sidebar { width: 214px; flex-shrink: 0; background: linear-gradient(180deg, #082844, #061b2e); color: #c7d5e3; padding: 15px 9px 12px; display: flex; flex-direction: column; position: sticky; top: 112px; height: calc(100vh - 112px); overflow-y: auto; }
+.sidebar-label { font-size: 9px; letter-spacing: 1.3px; color: #7f9bb3; padding: 3px 12px 12px; font-weight: 700; }
+.nav-item { width: 100%; border: 0; background: transparent; color: #c8d7e5; display: flex; align-items: center; gap: 12px; text-align: left; padding: 11px 12px; border-radius: 7px; margin-bottom: 4px; font-size: 11px; transition: .18s; text-decoration: none; font-weight: 700; }
+.nav-item:hover { background: #123c5e; color: #fff; }
+.nav-item.active { background: linear-gradient(90deg, #176fc2, #15518c); color: #fff; box-shadow: inset 3px 0 #65bdff; }
+.nav-icon { width: 20px; text-align: center; font-size: 16px; color: #a5bdd0; flex-shrink: 0; }
+.nav-item.active .nav-icon { color: #fff; }
+.sidebar-bottom { margin-top: auto; padding-top: 20px; }
+.side-status { display: flex; align-items: center; gap: 9px; border-top: 1px solid #28445a; padding: 15px 8px; }
+.pulse { width: 8px; height: 8px; background: #32c783; border-radius: 50%; box-shadow: 0 0 0 4px #164631; flex-shrink: 0; animation: pulse 2s infinite; }
+.side-status b { font-size: 9px; color: #e2edf6; display: block; }
+.side-status small { font-size: 8px; color: #91a9bf; margin-top: 4px; display: block; }
+
+/* --- Main Content --- */
+.main-content { flex: 1; min-width: 0; padding: 15px; display: flex; flex-direction: column; gap: 15px; background: #edf2f7; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; }
+.eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; color: var(--blue); margin-bottom: 4px; }
+.page-heading h2 { font-size: 20px; color: #102d4c; }
+.heading-actions { display: flex; gap: 12px; align-items: center; }
+.updated { font-size: 10px; color: #61778b; font-weight: 600; }
+.green-dot { display: inline-block; width: 7px; height: 7px; background: #1aa35e; border-radius: 50%; margin-right: 5px; animation: pulse 2s infinite; }
+
+/* --- Map & Layout Grid --- */
+.ops-grid { display: grid; grid-template-columns: minmax(0, 2.8fr) minmax(320px, 1fr); gap: 15px; height: 60vh; min-height: 500px; }
+.panel { background: #fff; border: 1px solid #dce5ee; border-radius: 9px; overflow: hidden; box-shadow: 0 2px 10px rgba(13,43,69,0.04); display: flex; flex-direction: column; }
+.panel-header { min-height: 42px; background: #fff; border-bottom: 1px solid #e2e9f0; display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; gap: 10px; flex-shrink: 0; z-index: 10;}
+.panel-title { gap: 9px; display: flex; align-items: center; }
+.title-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: #e9f2fb; color: #155c96; font-size: 14px; }
+.panel-title h3 { font-size: 13px; font-weight: 800; color: #163654; }
+.live-badge { font-size: 8px; color: #16844d; background: #e7f7ee; border-radius: 20px; padding: 5px 8px; font-weight: 800; letter-spacing: 0.5px; }
+
+/* Map Area - New Tactical Style */
+.map-wrap { flex: 1; position: relative; background: #061b2e; min-height: 400px; overflow: hidden; }
+#airspace-map { height: 100%; width: 100%; z-index: 1; background: #061b2e; }
+/* Satellite imagery with a blueish tactical tint */
+.leaflet-tile-pane { filter: saturate(80%) hue-rotate(180deg) invert(100%) brightness(80%) contrast(120%); }
+
+/* HUD Grid Overlay */
+.map-hud-grid { position: absolute; inset: 0; z-index: 2; pointer-events: none; background-image: linear-gradient(rgba(50, 199, 131, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(50, 199, 131, 0.1) 1px, transparent 1px); background-size: 50px 50px; }
+/* Radar Sweep */
+.radar-sweep { position: absolute; top: 50%; left: 50%; width: 150vmax; height: 150vmax; margin-top: -75vmax; margin-left: -75vmax; border-radius: 50%; background: conic-gradient(from 0deg, transparent 70%, rgba(50, 199, 131, 0.15) 100%); animation: radar-spin 4s linear infinite; pointer-events: none; z-index: 3; }
+@keyframes radar-spin { 100% { transform: rotate(360deg); } }
+
+.map-legend { position: absolute; z-index: 500; left: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; background: rgba(6, 27, 46, 0.85); border: 1px solid #29465e; border-radius: 7px; padding: 10px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); backdrop-filter: blur(4px); }
+.map-legend div { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #b8c9d8; font-weight: 600; }
+.legend-line { width: 16px; height: 0; border-top: 3px dashed #32c783; box-shadow: 0 0 5px #32c783; }
+.legend-zone { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+.zone-restricted { background: rgba(217, 56, 56, 0.4); border: 1px solid #ff4d4d; }
+
+/* Waypoint Marker */
+.wpt-marker { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 24px; height: 24px; background: rgba(6,27,46,0.8); border: 2px solid #65bdff; border-radius: 50%; box-shadow: 0 0 10px #65bdff; color: #fff; font-weight: 800; font-size: 9px; font-family: var(--mono); }
+.wpt-marker::after { content: ''; position: absolute; bottom: -5px; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #65bdff; }
+
+/* Glowing Routes */
+.glow-route { filter: drop-shadow(0 0 6px #32c783); }
+
+/* Right Panel - Sector Status */
+.sector-list { padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.sector-card { border: 1px solid #e2e9f0; border-radius: 6px; padding: 12px; background: #f8fafc; transition: 0.2s; cursor: pointer; }
+.sector-card:hover { border-color: var(--blue); background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.sector-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.sector-header h4 { font-size: 12px; color: #102d4c; }
+.sector-tag { font-size: 8px; font-weight: 800; padding: 3px 6px; border-radius: 3px; }
+.st-green { background: #e5f7ed; color: var(--green); border: 1px solid #bce3cd; }
+.st-amber { background: #fff3df; color: var(--amber); border: 1px solid #f0d5a8; }
+.st-red { background: #ffe4e4; color: var(--red); border: 1px solid #f5baba; }
+.sector-data { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sd-item { font-size: 10px; color: #718398; }
+.sd-item b { display: block; font-size: 12px; color: #102d4c; font-family: var(--mono); margin-top: 2px; }
+.sd-item .bar { height: 4px; background: #e5edf4; border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.sd-item .bar i { display: block; height: 100%; border-radius: 2px; }
+
+/* --- Bottom Section: Altitude & NOTAMs --- */
+.bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.b-panel { background: #fff; border: 1px solid #dce5ee; border-radius: 9px; padding: 15px; box-shadow: 0 2px 10px rgba(13,43,69,0.04); display: flex; flex-direction: column; }
+.b-title { font-size: 12px; font-weight: 800; color: #163654; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #edf1f5; padding-bottom: 10px; }
+
+/* Altitude Stratosphere */
+.alt-strata { display: flex; flex-direction: column; gap: 8px; }
+.alt-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed #e2e9f0; }
+.alt-label { font-family: var(--mono); font-weight: 700; font-size: 11px; color: #102d4c; width: 50px; text-align: right; }
+.alt-track { flex: 1; height: 24px; background: #f4f7fc; border-radius: 4px; position: relative; border: 1px solid #e2e9f0; overflow: hidden; }
+.alt-block { position: absolute; top: 0; bottom: 0; border-radius: 3px; font-size: 9px; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: center; padding: 0 5px; white-space: nowrap; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); }
+.ab-blue { background: linear-gradient(90deg, #1769b0, #348fdf); border-right: 1px solid #fff; }
+.ab-green { background: linear-gradient(90deg, #16854c, #24b36a); border-right: 1px solid #fff; }
+.ab-red { background: linear-gradient(90deg, #d93838, #f05a5a); border-right: 1px solid #fff; }
+
+/* NOTAM List */
+.notam-list { display: flex; flex-direction: column; gap: 10px; }
+.notam-item { padding: 10px; border-radius: 6px; border: 1px solid #e2e9f0; background: #fff; }
+.notam-item.warn { border-left: 3px solid var(--amber); }
+.notam-item.crit { border-left: 3px solid var(--red); }
+.notam-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.notam-header b { font-size: 11px; color: #102d4c; font-family: var(--mono); }
+.notam-time { font-size: 9px; color: #718398; }
+.notam-desc { font-size: 10px; color: #51687e; line-height: 1.4; }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #b0cde8; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #8faec7; }
+
+@media(max-width: 1100px) { .ops-grid { grid-template-columns: 1fr; height: auto; } .map-wrap { height: 500px; } .bottom-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="gov-brand">
+    <div class="flag"><i></i><i></i><i></i></div>
+    <div><strong>Government of India</strong><span>Ministry of Defence · Prototype</span></div>
+  </div>
+  <div class="top-actions">
+    <span class="demo-pill"><b></b> TACTICAL AIRSPACE</span>
+    <span class="top-date" id="currentDate"></span>
+    <button class="icon-button" title="Notifications">♧<em>3</em></button>
+    <div class="profile">
+      <div class="avatar">OC</div>
+      <div><strong>Operations Command</strong><small>Demo Administrator</small></div>
+    </div>
+  </div>
+</div>
+
+<!-- Brand Header -->
+<header class="brand-header">
+  <div class="brand-centre">
+    <div class="garud-emblem"><i class="wing"></i><i class="wing w2"></i><i class="wing w3"></i></div>
+    <div class="brand-title"><h1>GARUD <span></span></h1><p class="full-form">Generalised AI for Resource Utilisation &amp; Decision Support</p></div>
+  </div>
+  <div class="motto"><strong>सुरक्षित आकाश</strong> <strong class="saffron">शक्तिशाली भारत</strong></div>
+</header>
+
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-label">WORKSPACE</div>
+    <a href="index.html" class="nav-item"><span class="nav-icon">▦</span>Dashboard</a>
+    <a href="live-operations.html" class="nav-item"><span class="nav-icon">✈</span>Live Air Operations</a>
+    <a href="mission-planning.html" class="nav-item"><span class="nav-icon">▤</span>Mission Planning</a>
+    <a href="resource-management.html" class="nav-item"><span class="nav-icon">▣</span>Resource Management</a>
+    <a href="airspace-routes.html" class="nav-item active"><span class="nav-icon">⌖</span>Airspace &amp; Routes</a>
+    <a href="aircraft-fleet.html" class="nav-item"><span class="nav-icon">✈</span>Aircraft &amp; Fleet</a>
+    <a href="weatherwatch-live.html" class="nav-item"><span class="nav-icon">☁</span>Weather &amp; Threats</a>
+    <a href="aioptimize.html" class="nav-item"><span class="nav-icon">✳</span>AI Optimisation</a>
+    <a href="reports-analytics.html" class="nav-item"><span class="nav-icon">▥</span>Reports &amp; Analytics</a>
+    <a href="alerts-notifications.html" class="nav-item"><span class="nav-icon">♧</span>Alerts &amp; Notifications</a>
+    <div class="sidebar-bottom">
+      <div class="side-status">
+        <span class="pulse"></span>
+        <div><b>Radar Nominal</b><small>Airspace Deconflicted</small></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-heading">
+      <div><p class="eyebrow">AIR TRAFFIC CONTROL</p><h2>Airspace & Route Management</h2></div>
+      <div class="heading-actions">
+        <span class="updated"><span class="green-dot"></span> Live Radar Feed</span>
+      </div>
+    </div>
+
+    <div class="ops-grid">
+      <!-- Map Section -->
+      <article class="panel map-panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="title-icon">⌖</span><h3>Western & Northern Airspace Sectors</h3><span class="live-badge"><i></i> LIVE</span></div>
+          <div style="font-size:10px; color:#718398; font-weight:600;">Click a route to view details</div>
+        </div>
+        <div class="map-wrap">
+          <div id="airspace-map"></div>
+          <div class="map-hud-grid"></div>
+          <div class="radar-sweep"></div>
+          
+          <div class="map-legend">
+            <div><i class="legend-line"></i>Active Airway</div>
+            <div><i class="legend-zone zone-restricted"></i>Restricted / Danger Zone</div>
+            <div><div class="wpt-marker" style="position:static; transform:scale(0.6);">VOR</div> Navigation Beacon</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Right Side Panel -->
+      <div class="right-stack">
+        <article class="panel tactical-panel">
+          <div class="panel-header">
+            <div class="panel-title"><span class="title-icon">🛡️</span><h3>Sector Status</h3></div>
+          </div>
+          <div class="sector-list">
+            
+            <div class="sector-card" onclick="alert('Delhi FIR (VIDF) Details:\n- Controlling Agency: Delhi ACC\n- Active Flights: 142\n- Capacity: 88%\n- Status: High Traffic, expect delays.')">
+              <div class="sector-header"><h4>Delhi FIR (VIDF)</h4><span class="sector-tag st-amber">HIGH TRAFFIC</span></div>
+              <div class="sector-data">
+                <div class="sd-item">Capacity<b>88%</b><div class="bar"><i style="width:88%; background:var(--amber);"></i></div></div>
+                <div class="sd-item">Active Flights<b>142</b></div>
+                <div class="sd-item">Max Alt<b>FL 460</b></div>
+                <div class="sd-item">Agency<b>Delhi ACC</b></div>
+              </div>
+            </div>
+
+            <div class="sector-card" onclick="alert('Mumbai FIR (VABF) Details:\n- Controlling Agency: Mumbai ACC\n- Active Flights: 98\n- Capacity: 65%\n- Status: Nominal operations.')">
+              <div class="sector-header"><h4>Mumbai FIR (VABF)</h4><span class="sector-tag st-green">NOMINAL</span></div>
+              <div class="sector-data">
+                <div class="sd-item">Capacity<b>65%</b><div class="bar"><i style="width:65%; background:var(--green);"></i></div></div>
+                <div class="sd-item">Active Flights<b>98</b></div>
+                <div class="sd-item">Max Alt<b>FL 410</b></div>
+                <div class="sd-item">Agency<b>Mumbai ACC</b></div>
+              </div>
+            </div>
+
+            <div class="sector-card" onclick="alert('Jaisalmer Sector Details:\n- Status: RESTRICTED (No-Fly)\n- Reason: IAF Live Fire Exercise\n- Max Alt: UNL (Unlimited)\n- Agency: IAF SWAC')">
+              <div class="sector-header"><h4>Jaisalmer Sector</h4><span class="sector-tag st-red">RESTRICTED</span></div>
+              <div class="sector-data">
+                <div class="sd-item">Capacity<b>0%</b><div class="bar"><i style="width:100%; background:var(--red);"></i></div></div>
+                <div class="sd-item">Active Flights<b>0</b></div>
+                <div class="sd-item">Max Alt<b>UNL</b></div>
+                <div class="sd-item">Agency<b>IAF SWAC</b></div>
+              </div>
+            </div>
+
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- Bottom Features Section -->
+    <div class="bottom-grid">
+      
+      <!-- Altitude Stratosphere -->
+      <div class="b-panel">
+        <div class="b-title"><span style="font-size:16px;">📊</span> Altitude Block Allocation (FL)</div>
+        <div class="alt-strata">
+          <div class="alt-row">
+            <div class="alt-label">FL 400</div>
+            <div class="alt-track"><div class="alt-block ab-blue" style="left:10%; width:25%;">VIPER-1 (Su-30)</div></div>
+          </div>
+          <div class="alt-row">
+            <div class="alt-label">FL 350</div>
+            <div class="alt-track">
+              <div class="alt-block ab-green" style="left:40%; width:20%;">HERKY-2 (C-130)</div>
+              <div class="alt-block ab-blue" style="left:65%; width:30%;">RAPTOR-6 (Rafale)</div>
+            </div>
+          </div>
+          <div class="alt-row">
+            <div class="alt-label">FL 300</div>
+            <div class="alt-track"><div class="alt-block ab-green" style="left:5%; width:85%;">Civil Airway L509 (Civil Traffic)</div></div>
+          </div>
+          <div class="alt-row">
+            <div class="alt-label">FL 250</div>
+            <div class="alt-track"><div class="alt-block ab-red" style="left:30%; width:15%;">DANGER ZONE</div></div>
+          </div>
+          <div class="alt-row">
+            <div class="alt-label">FL 150</div>
+            <div class="alt-track"><div class="alt-block ab-green" style="left:50%; width:25%;">NETRA-3 (AEW&C)</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTAMs -->
+      <div class="b-panel">
+        <div class="b-title"><span style="font-size:16px;">⚠️</span> Active NOTAMs (Notice to Airmen)</div>
+        <div class="notam-list">
+          
+          <div class="notam-item crit">
+            <div class="notam-header">
+              <b>NOTAM A1234/26</b>
+              <span class="notam-time">VALID: 0600-1800 Z</span>
+            </div>
+            <div class="notam-desc"><b>Jaisalmer (VIJO):</b> Airspace restricted due to live fire exercise. Civil and military transit prohibited within 50NM radius up to FL 450.</div>
+          </div>
+
+          <div class="notam-item warn">
+            <div class="notam-header">
+              <b>NOTAM B5678/26</b>
+              <span class="notam-time">VALID: 24 HRS</span>
+            </div>
+            <div class="notam-desc"><b>Delhi (VIDP):</b> Runway 29 ILS unserviceable. Expect approach delays and holding patterns. Use VOR/DME approach.</div>
+          </div>
+
+          <div class="notam-item warn">
+            <div class="notam-header">
+              <b>NOTAM C9012/26</b>
+              <span class="notam-time">VALID: 1200-1600 Z</span>
+            </div>
+            <div class="notam-desc"><b>Mumbai (VABB):</b> Bird activity reported in vicinity of Runway 09/27. Pilots to exercise caution during approach and departure.</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let map = null;
+let routeLayer = null;
+let zoneLayer = null;
+let wptLayer = null;
+
+// Waypoints (VOR/DME Beacons)
+const waypoints = [
+  { id: "DPN", name: "Delhi (VIDP)", lat: 28.56, lon: 77.10 },
+  { id: "BOM", name: "Mumbai (VABB)", lat: 19.09, lon: 72.86 },
+  { id: "ALI", name: "Ahmadabad (VAAH)", lat: 23.07, lon: 72.63 },
+  { id: "GGC", name: "Gwalior (VIGR)", lat: 26.29, lon: 78.22 },
+  { id: "JDP", name: "Jodhpur (VIJO)", lat: 26.25, lon: 73.05 },
+  { id: "LEH", name: "Leh (VILH)", lat: 34.13, lon: 77.54 },
+  { id: "SXR", name: "Srinagar (VISR)", lat: 33.98, lon: 74.77 },
+  { id: "PNQ", name: "Pune (VAPO)", lat: 18.58, lon: 73.92 },
+  { id: "BLR", name: "Bengaluru (VOBL)", lat: 13.19, lon: 77.70 }
+];
+
+// Active Routes (Glowing)
+const routes = [
+  { id: "R-101", path: [[28.56,77.10], [26.29,78.22], [23.07,72.63], [19.09,72.86]], color: "#32c783" }, // Delhi -> Gwalior -> Ahmedabad -> Mumbai
+  { id: "R-204", path: [[28.56,77.10], [33.98,74.77], [34.13,77.54]], color: "#65bdff" }, // Delhi -> Srinagar -> Leh
+  { id: "R-412", path: [[19.09,72.86], [18.58,73.92], [13.19,77.70]], color: "#32c783" }  // Mumbai -> Pune -> Bengaluru
+];
+
+// Airspace Zones
+const restrictedZones = [
+  { name: "Jaisalmer No-Fly Zone", bounds: [[25.5, 70.0], [27.5, 72.0]], color: "#ff4d4d", type: "restricted" },
+  { name: "Pokhran Exercise Area", bounds: [[26.0, 71.5], [27.0, 72.5]], color: "#f97316", type: "danger" }
+];
+
+function initMap() {
+  const el = document.getElementById("airspace-map");
+  if (!el) return;
+
+  map = L.map(el, { zoomControl: false, scrollWheelZoom: true }).setView([25.5, 76.0], 5.5);
+  
+  // Use a satellite/terrain base map for a realistic tactical look
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 18, attribution: "Tiles &copy; Esri"
+  }).addTo(map);
+  
+  L.control.zoom({ position: "topright" }).addTo(map);
+
+  // Layers
+  routeLayer = L.layerGroup().addTo(map);
+  zoneLayer = L.layerGroup().addTo(map);
+  wptLayer = L.layerGroup().addTo(map);
+
+  // 1. Draw Restricted/Danger Zones
+  restrictedZones.forEach(zone => {
+    const rect = L.rectangle(zone.bounds, {
+      color: zone.color,
+      weight: 2,
+      fillColor: zone.color,
+      fillOpacity: 0.15,
+      dashArray: "5 5"
+    }).addTo(zoneLayer);
+    
+    rect.bindTooltip(zone.name, { permanent: true, direction: "center", className: "zone-label" });
+  });
+
+  // 2. Draw Glowing Routes
+  routes.forEach(route => {
+    // Outer glow layer
+    L.polyline(route.path, {
+      color: route.color,
+      weight: 10,
+      opacity: 0.2,
+      className: 'glow-route'
+    }).addTo(routeLayer);
+    
+    // Inner solid line
+    const polyline = L.polyline(route.path, {
+      color: route.color,
+      weight: 3,
+      dashArray: "8 6",
+      opacity: 1
+    }).addTo(routeLayer);
+
+    polyline.on('click', () => {
+      alert(`Route ID: ${route.id}\nStatus: Active\nClick 'View Details' in the table below for full manifest.`);
+    });
+  });
+
+  // 3. Draw Waypoints (VOR/DME)
+  waypoints.forEach(wpt => {
+    const icon = L.divIcon({
+      className: 'wpt-wrapper',
+      html: `<div class="wpt-marker">${wpt.id}</div>`,
+      iconSize: [24, 30],
+      iconAnchor: [12, 30]
+    });
+
+    L.marker([wpt.lat, wpt.lon], { icon }).addTo(wptLayer)
+      .bindPopup(`<div style="font-weight:800; color:#102d4c; font-size:12px; border-bottom:1px solid #edf1f5; padding-bottom:4px; margin-bottom:4px;">${wpt.name}</div>
+                  <div style="font-size:10px; color:#51687e;">Beacon: <b>${wpt.id}</b></div>
+                  <div style="font-size:10px; color:#51687e;">Coords: ${wpt.lat.toFixed(2)}°N, ${wpt.lon.toFixed(2)}°E</div>
+                  <div style="font-size:10px; color:#51687e;">Type: VOR/DME</div>`);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Live Clock
+  setInterval(() => {
+    const now = new Date();
+    const zulu = now.toISOString().split('T')[1].split('.')[0];
+    const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+    document.getElementById("currentDate").textContent = `${dateStr} · ${zulu} ZULU`;
+  }, 1000);
+
+  initMap();
+});
+</script>
+</body>
+</html>
